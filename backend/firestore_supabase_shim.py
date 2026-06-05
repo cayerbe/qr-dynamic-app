@@ -95,6 +95,30 @@ class ShimDocumentReference:
                     
             data = {k: v for k, v in safe_data.items() if v is not None}
             
+        elif self.table_name == 'qr_scan_logs':
+            safe_data = {
+                'id': data.get('id') or data.get('scan_id'),
+                'qr_id': data.get('qr_id'),
+                'user_id': data.get('user_id'),
+                'device_info': data.get('device_info', {}),
+                'location_info': data.get('location_info', {}),
+                'qr_type': data.get('qr_type'),
+                'content_type': data.get('content_type'),
+                'scan_type': data.get('scan_type'),
+                'anti_forgery_analysis': data.get('anti_forgery_analysis', {})
+            }
+            if 'timestamp' in data:
+                if isinstance(data['timestamp'], datetime):
+                    safe_data['timestamp'] = data['timestamp'].isoformat()
+                else:
+                    safe_data['timestamp'] = data['timestamp']
+                    
+            # Put extra info into anti_forgery_analysis
+            if 'network_info' in data:
+                safe_data['anti_forgery_analysis']['network_info'] = data['network_info']
+                
+            data = {k: v for k, v in safe_data.items() if v is not None}
+            
         data = sanitize_for_json(data)
         supabase.table(self.table_name).upsert(data).execute()
         
