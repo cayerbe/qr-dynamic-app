@@ -254,7 +254,8 @@ def redirect_and_track(qr_id):
         token = generate_signed_token(token_data)
         
         # Build scanner URL with token and expiry
-        scanner_base = "https://qr-dynamic-cdp.web.app/pwa-scanner.html"
+        client_url = os.environ.get('CLIENT_URL', 'https://qr-dynamic-cdp.web.app').rstrip('/')
+        scanner_base = f"{client_url}/pwa-scanner.html"
         scanner_url = f"{scanner_base}#verification_id={qr_id}&token={token}&exp={expiry_time}"
         
         logger.info(f"Generated time-limited URL (expires at {expiry_time})")
@@ -1462,7 +1463,8 @@ def redirect_short_code(short_code):
         })
         
         # Build PWA Scanner URL with all parameters
-        scanner_url = f"https://qr-dynamic-cdp.web.app/pwa-scanner.html#verification_id={verification_id}&token={token}&exp={expiry_time}&qr={qr_id}"
+        client_url = os.environ.get('CLIENT_URL', 'https://qr-dynamic-cdp.web.app').rstrip('/')
+        scanner_url = f"{client_url}/pwa-scanner.html#verification_id={verification_id}&token={token}&exp={expiry_time}&qr={qr_id}"
         
         logger.info(f"🔗 Redirecting to PWA Scanner (not destination!)")
         logger.info(f"   - Short code: {short_code}")
