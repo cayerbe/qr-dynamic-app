@@ -48,7 +48,7 @@ export const AuthService = {
         }
       }
 
-      return { success: true, user: data.user };
+      return { success: true, user: data.user, session: data.session };
     } catch (error: any) {
       console.error("🚨 Registration error:", error.message);
       return {

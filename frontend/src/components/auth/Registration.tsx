@@ -110,14 +110,27 @@ const Register: React.FC = () => {
       // IMPORTANT CHANGE: Use Firebase directly instead of mixing API and Firebase
       try {
         // Use AuthService for registration
-        await AuthService.register(
+        const response = await AuthService.register(
           formData.email,
           formData.password,
           formData.displayName,
         );
 
+        if (!response.success) {
+          throw new Error(response.message);
+        }
+
         console.log("✅ Registration successful!");
         setSuccess(true);
+        setLoading(false);
+
+        if (!response.session) {
+          // Email confirmation is required by Supabase
+          setError({
+            general: "Registration successful! Please check your email inbox to confirm your email address before logging in."
+          });
+          return; // Do not redirect to dashboard
+        }
 
         // Wait a bit before redirecting
         setTimeout(() => {
