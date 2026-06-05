@@ -67,18 +67,21 @@ except ImportError:
 
 # Firebase imports
 try:
-    from google.cloud import firestore
-    from google.cloud import storage as gcloud_storage
-    db = firestore.Client(project="crack-celerity-419510")
-    storage_client = gcloud_storage.Client()
-    bucket = storage_client.bucket("crack-celerity-419510.appspot.com")
+    from firestore_supabase_shim import db, firestore
     logger = logging.getLogger(__name__)
-    logger.info("Firebase and Storage clients initialized successfully")
+    # Initialize components
+    try:
+        from supabase_client import upload_to_supabase_storage
+        logger.info("Storage clients initialized successfully")
+        
+    except Exception as e:
+        logger.error(f"Storage initialization error: {e}")
+    bucket = None
+    logger.info("Supabase initialized successfully")
 except Exception as e:
     logger = logging.getLogger(__name__)
     logger.error(f"Firebase/Storage initialization error: {e}")
     db = None
-    storage_client = None
     bucket = None
 
 # Constants
@@ -504,19 +507,18 @@ def generate_qr_with_size_adaptive_cdp(
         final_image = Image.fromarray(qr_with_cdp, mode='L')
         final_image.save(output_path, 'PNG', dpi=(cdp_config.dpi, cdp_config.dpi))
         
-        # Upload to Firebase Storage
+        # Upload to Supabase Storage
+        import io
+        buffer = io.BytesIO()
+        final_image.save(buffer, format="PNG")
+        
         qr_url = None
-        if bucket:
-            try:
-                with open(output_path, "rb") as qr_file:
-                    blob = bucket.blob(f"qr_codes/{qr_filename}")
-                    blob.upload_from_file(qr_file, content_type="image/png")
-                    blob.make_public()
-                    qr_url = blob.public_url
-            except Exception as e:
-                logger.error(f"Upload error: {e}")
-                qr_url = f"{API_BASE_URL}/proxy/qr-image/{qr_id}"
-        else:
+        # Upload to Supabase Storage
+        try:
+            from supabase_client import upload_to_supabase_storage
+            qr_url = upload_to_supabase_storage(buffer.getvalue(), qr_filename, content_type="image/png")
+        except Exception as e:
+            logger.error(f"Failed to upload to Supabase: {e}")
             qr_url = f"{API_BASE_URL}/proxy/qr-image/{qr_id}"
         
         # Get scanning recommendations

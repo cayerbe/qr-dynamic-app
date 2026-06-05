@@ -1,6 +1,6 @@
 """Fintech Model - One-time scan for payments/tickets"""
 from .base_model import BaseQRModel
-from google.cloud import firestore
+from firestore_supabase_shim import firestore
 
 class FintechQRModel(BaseQRModel):
     """One-time use QR codes for financial transactions"""

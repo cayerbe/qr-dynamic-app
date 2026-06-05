@@ -1,6 +1,6 @@
 """Luxury Model - Multi-scan with genealogy (Generic, not Ferrari-specific)"""
 from .base_model import BaseQRModel
-from google.cloud import firestore
+from firestore_supabase_shim import firestore
 import uuid
 
 class LuxuryQRModel(BaseQRModel):

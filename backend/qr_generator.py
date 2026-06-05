@@ -11,26 +11,13 @@ import logging
 from datetime import datetime
 
 # Google Cloud Imports
-from google.cloud import storage as gcloud_storage
 from firestore_supabase_shim import db, firestore
+from supabase_client import upload_to_supabase_storage
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS", "firestore-credentials.json")
-
-# Supabase is initialized via firestore_supabase_shim
-
-# Initialize Cloud Storage Client (pending full Supabase Storage migration)
-try:
-    storage_client = gcloud_storage.Client.from_service_account_json(CREDENTIALS_PATH)
-    bucket = storage_client.bucket("crack-celerity-419510.appspot.com")
-except Exception as e:
-    logger.error(f"Storage client initialization failed: {e}")
-    # Don't crash entirely if storage is missing, but log error
-    bucket = None
 
 # Constants
 TEMP_DIR = '/tmp/qr_codes'
@@ -42,15 +29,16 @@ FORGERY_LOGS_COLLECTION = 'qr_forgery_logs'
 
 # Shared Utilities
 def upload_to_firebase_storage(file_data, file_name, content_type="image/png"):
-    """Uploads a file to Firebase Storage and returns the public URL."""
+    """Uploads a file to Supabase Storage and returns the public URL."""
     try:
-        blob = bucket.blob(f"qr_codes/{file_name}")
-        blob.upload_from_string(file_data, content_type=content_type)
-        blob.make_public()
-        return blob.public_url
+        url = upload_to_supabase_storage(file_data, file_name, content_type)
+        if url:
+            return url
+        else:
+            return None
     except Exception as e:
         logger.error(f"Storage upload failed: {e}")
-        raise
+        return None
 
 def generate_unique_cdp(shape, intensity, qr_id):
     """Generates a unique CDP pattern based on the QR ID."""

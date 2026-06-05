@@ -1,4 +1,4 @@
-import { Timestamp } from "firebase/firestore";
+import { Timestamp } from "../utils/timestampUtils";
 import {
   safeConvertToTimestamp,
   safeConvertToDate,

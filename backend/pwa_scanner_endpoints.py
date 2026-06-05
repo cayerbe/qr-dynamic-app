@@ -41,7 +41,7 @@ def verify_pwa_origin(f):
     return decorated_function
 
 # MODIFIED: Removed ap_generator parameter
-def register_pwa_scanner_routes(app, db, bucket, scan_logger):
+def register_pwa_scanner_routes(app, db, scan_logger):
     """Register all PWA scanner routes"""
     
     @app.route('/api/pwa/verify-scan', methods=['POST'])
@@ -78,8 +78,12 @@ def register_pwa_scanner_routes(app, db, bucket, scan_logger):
             
             # Get original QR from storage
             original_path = os.path.join('/tmp', f'original_{qr_id}.png')
-            blob = bucket.blob(f'qr_codes/{qr_id}.png')
-            blob.download_to_filename(original_path)
+            from supabase_client import download_from_supabase_storage
+            file_data = download_from_supabase_storage(f"{qr_id}.png")
+            if not file_data:
+                raise Exception("Image not found in storage")
+            with open(original_path, "wb") as f:
+                f.write(file_data)
             
             # Run CDP-focused verification
             verification_result = run_cdp_focused_verification(

@@ -6,10 +6,9 @@ import traceback
 from datetime import datetime, timezone, timedelta
 from flask import Flask, jsonify, request, send_file, redirect, make_response, Blueprint, abort, render_template
 from flask_cors import CORS
-# Removed firebase_admin import
-from google.cloud import storage as gcloud_storage
 # Import Supabase shim
 from firestore_supabase_shim import db, firestore
+from supabase_client import download_from_supabase_storage
 class FieldFilter:
     def __init__(self, field, op, value):
         self.field = field
@@ -71,10 +70,8 @@ def find_credentials(filename):
 CREDENTIALS_PATH = find_credentials('firestore-credentials.json')
 
 # Supabase client is initialized in firestore_supabase_shim.py
+# Supabase client is initialized in firestore_supabase_shim.py
 print("Supabase shim initialized for database operations")
-
-# Use Google Cloud Storage client for bucket initialization (pending migration to Supabase Storage)
-bucket = gcloud_storage.Client().bucket('crack-celerity-419510.appspot.com')
 
 # Initialize scan logger with shim db
 scan_logger = initialize_scan_logger(db)
@@ -141,7 +138,6 @@ register_self_scanning_routes(app, db)
 register_pwa_scanner_routes(
     app=app,
     db=db,
-    bucket=bucket,
     scan_logger=scan_logger
 )
 
@@ -548,17 +544,15 @@ def proxy_qr_image(qr_id):
             
             return response
         
-        # If not in temp dir, get from Google Cloud Storage
-        storage_client = gcloud_storage.Client()
-        bucket = storage_client.bucket('crack-celerity-419510.appspot.com')
-        blob = bucket.blob(f'qr_codes/{qr_id}.png')
-        
-        if not blob.exists():
+        # If not in temp dir, get from Supabase Storage
+        file_data = download_from_supabase_storage(f"{qr_id}.png")
+        if not file_data:
             return jsonify({"success": False, "error": "QR image not found"}), 404
         
         # Download to temp file
         temp_file_path = os.path.join(TEMP_DIR, f"{qr_id}.png")
-        blob.download_to_filename(temp_file_path)
+        with open(temp_file_path, "wb") as f:
+            f.write(file_data)
         
         # Set appropriate headers for CORS and caching
         response = send_file(temp_file_path, mimetype='image/png')
@@ -720,10 +714,13 @@ def handle_qr_scan():
                 original_temp_path = f"/tmp/original_{qr_id}.png"
                 
                 try:
-                    # Download original from Firebase Storage
+                    # Download original from Supabase Storage
                     original_filename = f"{qr_id}.png"
-                    blob = bucket.blob(f"qr_codes/{original_filename}")
-                    blob.download_to_filename(original_temp_path)
+                    file_data = download_from_supabase_storage(original_filename)
+                    if not file_data:
+                        raise Exception("Original QR not found in storage")
+                    with open(original_temp_path, "wb") as f:
+                        f.write(file_data)
                     logger.info(f"🔐 Original QR downloaded for comparison")
                     
                     # Step 3: PATTERN-FOCUSED ANALYSIS (SIZE-AGNOSTIC)
@@ -1644,3 +1641,7 @@ def public_dashboard(client_id):
     Only shows scans from their specific QR codes
     """
     return render_template('dashboard.html', client_id=client_id)
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5001))
+    app.run(host='0.0.0.0', port=port, debug=True)

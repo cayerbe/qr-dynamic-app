@@ -7,7 +7,6 @@ import requests
 import cv2
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
-from google.cloud import storage as gcloud_storage
 
 from firestore_supabase_shim import db, firestore
 
@@ -275,11 +274,14 @@ class AdvancedScanLogger:
             # 1. Construct original filename (assumes naming format used in generation)
             original_filename = f"cdp_QR_{qr_id}.png"
 
-            # 2. Download original from Cloud Storage to temp
-            bucket = gcloud_storage.Client().bucket('crack-celerity-419510.appspot.com')
-            blob = bucket.blob(original_filename)
+            # 2. Download original from Supabase Storage to temp
+            from supabase_client import download_from_supabase_storage
+            file_data = download_from_supabase_storage(original_filename)
+            if not file_data:
+                raise Exception("Original QR not found in storage")
             original_temp_path = os.path.join(tempfile.gettempdir(), f"original_{qr_id}.png")
-            blob.download_to_filename(original_temp_path)
+            with open(original_temp_path, "wb") as f:
+                f.write(file_data)
 
             # 3. Load both images as grayscale
             original = cv2.imread(original_temp_path, cv2.IMREAD_GRAYSCALE)

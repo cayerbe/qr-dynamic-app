@@ -5,8 +5,7 @@ import logging
 import time
 from datetime import datetime
 from flask import jsonify, request
-from google.cloud import firestore
-
+from firestore_supabase_shim import db, firestore
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("self_scanning_qr")

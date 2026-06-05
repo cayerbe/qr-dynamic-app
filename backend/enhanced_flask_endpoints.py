@@ -21,8 +21,7 @@ import time
 import base64
 import uuid
 from anti_photocopy_cdp import AntiPhotocopyGenerator
-from google.cloud import storage as gcloud_storage
-
+from supabase_client import download_from_supabase_storage
 logger = logging.getLogger(__name__)
 
 # Scan logger is initialized in app.py, but we can re-init it with the shim
@@ -35,7 +34,6 @@ enhanced_bp = Blueprint('enhanced_bp', __name__)
 QR_COLLECTION = 'qr_codes'
 TEMP_DIR = '/tmp/qr_codes'
 ap_generator = AntiPhotocopyGenerator()
-bucket = gcloud_storage.Client().bucket('crack-celerity-419510.appspot.com')
 
 def verify_pwa_origin(f):
     """Decorator to verify PWA scanner requests"""
@@ -639,8 +637,11 @@ def pwa_verify_scan():
             # Try to get original QR from storage
             try:
                 original_path = os.path.join('/tmp', f'original_{verification_id}.png')
-                blob = bucket.blob(f'qr_codes/{qr_id}.png')
-                blob.download_to_filename(original_path)
+                file_data = download_from_supabase_storage(f"{qr_id}.png")
+                if not file_data:
+                    raise Exception("Image not found in storage")
+                with open(original_path, "wb") as f:
+                    f.write(file_data)
 
                 # Run comprehensive verification
                 verification_result = run_comprehensive_pwa_verification_secure(

@@ -1,6 +1,6 @@
 """Commodity Model - Mass production tracking"""
 from .base_model import BaseQRModel
-from google.cloud import firestore
+from firestore_supabase_shim import firestore
 import uuid
 
 class CommodityQRModel(BaseQRModel):
