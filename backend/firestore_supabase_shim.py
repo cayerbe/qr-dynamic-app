@@ -2,6 +2,16 @@ import uuid
 from datetime import datetime
 from supabase_client import supabase
 import json
+import json
+
+def sanitize_for_json(obj):
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_json(item) for item in obj]
+    return obj
 
 class ShimDocumentSnapshot:
     def __init__(self, data, exists, doc_id=None):
@@ -85,6 +95,7 @@ class ShimDocumentReference:
                     
             data = {k: v for k, v in safe_data.items() if v is not None}
             
+        data = sanitize_for_json(data)
         supabase.table(self.table_name).upsert(data).execute()
         
     def update(self, data):
@@ -108,6 +119,7 @@ class ShimDocumentReference:
                     current_data[parts[0]][parts[1]] = v
                 else:
                     current_data[k] = v
+        current_data = sanitize_for_json(current_data)
         supabase.table(self.table_name).update(current_data).eq("id", self.doc_id).execute()
         
     def collection(self, sub_collection):
@@ -128,10 +140,15 @@ class ShimQuery:
     def where(self, field=None, op=None, value=None, filter=None):
         new_filters = list(self.filters)
         if filter:
-            # FieldFilter extraction logic (mocked)
-            field = getattr(filter, 'field_path', None) or filter.field
-            op = getattr(filter, 'op', None) or filter.operator
-            value = getattr(filter, 'value', None) or filter.value
+            # FieldFilter extraction logic
+            field = getattr(filter, 'field_path', None)
+            if not field and hasattr(filter, 'field'): field = filter.field
+            
+            op = getattr(filter, 'op_string', None)
+            if not op and hasattr(filter, 'operator'): op = filter.operator
+            if not op and hasattr(filter, 'op'): op = filter.op
+            
+            value = getattr(filter, 'value', None)
         new_filters.append((field, op, value))
         return ShimQuery(self.table_name, new_filters, (self.order_by_col, 'DESCENDING' if self.order_desc else 'ASCENDING') if self.order_by_col else None, self.limit_count)
 
