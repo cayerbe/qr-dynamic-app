@@ -41,6 +41,50 @@ class ShimDocumentReference:
     def set(self, data):
         if not supabase: return
         data['id'] = self.doc_id
+        
+        # Safely map qr_codes to match Supabase schema
+        if self.table_name == 'qr_codes':
+            safe_data = {
+                'id': data.get('id'),
+                'user_id': data.get('user_id'),
+                'name': data.get('name'),
+                'description': data.get('description'),
+                'type': data.get('type'),
+                'content_type': data.get('content_type'),
+                'data': data.get('data', {}),
+                'image_url': data.get('image_url') or data.get('qr_image_url'),
+                'intensity': data.get('intensity'),
+                'physical_properties': data.get('physical_properties', {}),
+                'security_features': data.get('security_features', {}),
+                'scan_statistics': data.get('scan_statistics', {"total_scans": 0, "total_scan_attempts": 0}),
+                'model_config': data.get('model_config', {}),
+                'usage_guidelines': data.get('usage_guidelines', {}),
+                'forensic_profile': data.get('forensic_profile', {}),
+                'generation_stats': data.get('generation_stats', {}),
+                'ipzs_compliance': data.get('ipzs_compliance', {}),
+                'campaign': data.get('campaign'),
+                'tags': data.get('tags', []),
+                'short_code': data.get('short_code'),
+                'verification_id': data.get('verification_id'),
+                'metadata': data.get('metadata', {})
+            }
+            # Bundle any extra fields into metadata
+            valid_keys = set(safe_data.keys())
+            for k, v in data.items():
+                if k not in valid_keys and k not in ['created_at', 'updated_at']:
+                    # Format datetime objects inside metadata if any
+                    if isinstance(v, datetime):
+                        v = v.isoformat()
+                    safe_data['metadata'][k] = v
+            
+            if 'created_at' in data:
+                if isinstance(data['created_at'], datetime):
+                    safe_data['created_at'] = data['created_at'].isoformat()
+                else:
+                    safe_data['created_at'] = data['created_at']
+                    
+            data = {k: v for k, v in safe_data.items() if v is not None}
+            
         supabase.table(self.table_name).upsert(data).execute()
         
     def update(self, data):
