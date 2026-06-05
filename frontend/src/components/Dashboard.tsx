@@ -596,8 +596,13 @@ END:VCARD`;
       const modelConfig = QR_MODEL_CONFIGS[selectedModel];
 
       // Build request payload
+      let finalUrl = url;
+      if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+          finalUrl = 'https://' + finalUrl;
+      }
+
       const requestData = {
-        data: url,
+        data: finalUrl,
         model: selectedModel, // ADD THIS - Critical!
         size_mm: modelConfig.features.size_mm,
         intensity: modelConfig.features.intensity,

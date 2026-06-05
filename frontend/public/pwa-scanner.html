@@ -524,7 +524,11 @@
                     console.log('🚀 All security checks passed! Redirecting to:', scanData.destination_url);
                     
                     setTimeout(() => {
-                        window.location.href = scanData.destination_url;
+                        let finalUrl = scanData.destination_url;
+                        if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+                            finalUrl = 'https://' + finalUrl;
+                        }
+                        window.location.href = finalUrl;
                     }, CONFIG.REDIRECT_DELAY);
                 } else {
                     throw new Error('No destination URL available');
