@@ -298,7 +298,7 @@ interface ScanTrackingProps {
   qrId?: string;
 }
 
-const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || "");
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "";
 
 const EnhancedScanTracking: React.FC<ScanTrackingProps> = ({ qrId }) => {
   const [scanLogs, setScanLogs] = useState<AntiForgeryScanLog[]>([]);

@@ -25,7 +25,7 @@ import {
 } from "../types/qr-models";
 import { generateEnhancedQR } from "../services/qrApiService"; // Add this import
 
-const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || "");
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "";
 
 // QR Size Options
 const QR_SIZE_OPTIONS = [

@@ -162,21 +162,18 @@ const AutoVerification: React.FC = () => {
       }
 
       // Log the scan with anonymous user ID
-      await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || ""}/qr/scan`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            qr_id: id,
-            user_id: "anonymous-user",
-            device_info: deviceInfo,
-            location_info: locationInfo,
-          }),
+      await fetch(`${process.env.REACT_APP_API_BASE_URL || ""}/qr/scan`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          qr_id: id,
+          user_id: "anonymous-user",
+          device_info: deviceInfo,
+          location_info: locationInfo,
+        }),
+      });
 
       // Verify authenticity
       const verifyResponse = await fetch(

@@ -127,7 +127,8 @@ const Register: React.FC = () => {
         if (!response.session) {
           // Email confirmation is required by Supabase
           setError({
-            general: "Registration successful! Please check your email inbox to confirm your email address before logging in."
+            general:
+              "Registration successful! Please check your email inbox to confirm your email address before logging in.",
           });
           return; // Do not redirect to dashboard
         }

@@ -24,7 +24,7 @@ const SelfScanningQR: React.FC<SelfScanningQRProps> = ({
   imageUrl,
   size = 250,
   onScanComplete,
-  apiBaseUrl = (process.env.REACT_APP_API_BASE_URL || ""),
+  apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "",
 }) => {
   const [searchParams] = useSearchParams();
   const urlQrId = searchParams.get("qrId");
