@@ -180,6 +180,7 @@ class SizeAdaptiveCDPGenerator:
         
         # Apply Gaussian blur with adaptive kernel
         if kernel_size > 1:
+            kernel_size = int(kernel_size) if kernel_size % 2 == 1 else int(kernel_size) + 1
             noise = cv2.GaussianBlur(noise, (kernel_size, kernel_size), 0)
         
         return noise
