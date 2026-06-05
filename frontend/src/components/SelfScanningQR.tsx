@@ -24,7 +24,7 @@ const SelfScanningQR: React.FC<SelfScanningQRProps> = ({
   imageUrl,
   size = 250,
   onScanComplete,
-  apiBaseUrl = "https://crack-celerity-419510.uc.r.appspot.com/api",
+  apiBaseUrl = (process.env.REACT_APP_API_BASE_URL || ""),
 }) => {
   const [searchParams] = useSearchParams();
   const urlQrId = searchParams.get("qrId");

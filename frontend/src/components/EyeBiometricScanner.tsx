@@ -25,7 +25,7 @@ const EyeBiometricScanner: React.FC<EyeBiometricScannerProps> = ({
   userId,
   onSuccess,
   onFailure,
-  apiBaseUrl = "https://crack-celerity-419510.uc.r.appspot.com/api",
+  apiBaseUrl = (process.env.REACT_APP_API_BASE_URL || ""),
 }) => {
   const [status, setStatus] = useState<
     "initializing" | "scanning" | "processing" | "success" | "error"

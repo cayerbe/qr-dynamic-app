@@ -5,7 +5,7 @@ import { Save, RotateCcw, Moon, Server } from "lucide-react";
  * Settings Component for configuring application preferences
  */
 const Settings = () => {
-  const API_BASE_URL = "https://crack-celerity-419510.appspot.com/api";
+  const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || "");
 
   const [settings, setSettings] = useState({
     apiUrl: API_BASE_URL,

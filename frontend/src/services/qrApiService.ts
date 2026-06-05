@@ -1212,7 +1212,7 @@ export const getQRDetails = async (qrId: string) => {
 // Verify Photocopy
 export const verifyPhotocopy = async (qrId: string, formData: FormData) => {
   const response = await fetch(
-    `https://crack-celerity-419510.uc.r.appspot.com/api/qr/verify-photocopy/${qrId}`,
+    `${process.env.REACT_APP_API_BASE_URL || ""}/qr/verify-photocopy/${qrId}`,
     {
       method: "POST",
       body: formData,

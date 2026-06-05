@@ -15,7 +15,7 @@ import {
 } from "../../types/qr-types";
 
 // Define the base URL for API calls - use the deployed backend
-const API_BASE_URL = "https://crack-celerity-419510.uc.r.appspot.com/api";
+const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || "");
 
 console.log(`QR API Service initialized with base URL: ${API_BASE_URL}`);
 

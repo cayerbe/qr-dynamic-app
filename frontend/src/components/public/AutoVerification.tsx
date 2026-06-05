@@ -163,7 +163,7 @@ const AutoVerification: React.FC = () => {
 
       // Log the scan with anonymous user ID
       await fetch(
-        `https://crack-celerity-419510.uc.r.appspot.com/api/qr/scan`,
+        `${process.env.REACT_APP_API_BASE_URL || ""}/qr/scan`,
         {
           method: "POST",
           headers: {
@@ -180,7 +180,7 @@ const AutoVerification: React.FC = () => {
 
       // Verify authenticity
       const verifyResponse = await fetch(
-        `https://crack-celerity-419510.uc.r.appspot.com/api/qr/alert_forgery/${id}`,
+        `${process.env.REACT_APP_API_BASE_URL || ""}/qr/alert_forgery/${id}`,
       );
 
       if (!verifyResponse.ok) {
