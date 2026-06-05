@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner</title>
+    
+    <meta name="theme-color" content="#1a73e8">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
+    <!-- QR Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .scanner-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 500px;
+            margin: 0 auto;
+            width: 100%;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            background: #1a73e8;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        #reader {
+            width: 100%;
+            position: relative;
+        }
+        
+        .status-container {
+            padding: 20px;
+            text-align: center;
+            min-height: 100px;
+        }
+        
+        .processing {
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #1a73e8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .alert {
+            margin: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .alert.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef5350;
+        }
+        
+        .alert.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #66bb6a;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #1a73e8;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            margin: 10px;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn.secondary {
+            background: #6c757d;
+        }
+        
+        .countdown {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a73e8;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="scanner-container">
+        <div class="header">
+            <h1>📱 QR Scanner</h1>
+            <p>Point camera at QR code</p>
+        </div>
+        
+        <!-- QR Scanner -->
+        <div id="reader"></div>
+        
+        <!-- Status Container -->
+        <div class="status-container" id="status">
+            <p>Ready to scan...</p>
+        </div>
+        
+        <!-- Processing Container (hidden by default) -->
+        <div id="processing" class="hidden">
+            <div class="processing">
+                <div class="spinner"></div>
+                <h3>Processing...</h3>
+                <p>Please wait a moment</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Configuration
+    const CONFIG = {
+        API_BASE: 'https://crack-celerity-419510.uc.r.appspot.com',
+        REDIRECT_DELAY: 2000,
+        PROCESSING_DISPLAY_TIME: 1500
+    };
+
+    let html5QrCode = null;
+    let isProcessing = false;
+
+    // 🔧 MINIMAL FIX: Only change the initialization logic
+    document.addEventListener('DOMContentLoaded', async () => {
+        console.log('🔍 Scanner initialization - checking URL...');
+        
+        // Check for BOTH patterns
+        const pathData = getDataFromPath();
+        
+        if (pathData) {
+            console.log(`🎯 Found ${pathData.type} in URL: ${pathData.id}`);
+            
+            // 🔑 KEY FIX: Skip camera for native scans
+            if (await isFromNativeQRScan()) {
+                console.log('📱 Native QR scan detected - processing without camera');
+                // Process immediately without camera
+                document.getElementById('reader').style.display = 'none';
+                document.getElementById('processing').classList.remove('hidden');
+                
+                if (pathData.type === 'redirect') {
+                    await processRedirect(pathData.id);
+                } else if (pathData.type === 'verification') {
+                    await silentVerification(pathData.id); 
+                }
+            } else {
+                console.log('💻 Manual web access - starting silent background scanning');
+                // Manual access - start silent background scanning
+                startSilentBackgroundScanning();
+            }
+        } else {
+            // Direct access - start silent background scanning
+            console.log('📷 Direct access - starting silent background scanning');
+            startSilentBackgroundScanning();
+        }
+    });
+
+    // 🔧 NEW: Detect if opened from native QR scan
+    async function isFromNativeQRScan() {
+        // Check multiple indicators of native QR scan
+        
+        // 1. Empty referrer (common with native apps)
+        if (!document.referrer || document.referrer === '') {
+            console.log('✅ Empty referrer - likely native scan');
+            return true;
+        }
+        
+        // 2. No window opener (direct navigation)
+        if (!window.opener && window.parent === window) {
+            console.log('✅ Direct navigation - likely native scan');
+            return true;
+        }
+        
+        // 3. Mobile device with minimal history
+        if (/Mobile|Android|iPhone|iPad/.test(navigator.userAgent) && history.length <= 2) {
+            console.log('✅ Mobile with fresh history - likely native scan');
+            return true;
+        }
+        
+        // 4. Check navigation type
+        if (performance.navigation && performance.navigation.type === 0) { // TYPE_NAVIGATE
+            console.log('✅ Fresh navigation - likely native scan');
+            return true;
+        }
+        
+        return false;
+    }
+
+    // 🔧 KEEP ALL EXISTING FUNCTIONS - Handle both /v/ and /redirect/ patterns + URL params + FRAGMENTS
+    function getDataFromPath() {
+        const path = window.location.pathname;
+        const urlParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.substring(1)); // Remove # and parse
+        console.log('🔍 Checking path:', path);
+        console.log('🔍 Checking URL params:', window.location.search);
+        console.log('🔍 Checking URL hash:', window.location.hash);
+        console.log('🔍 Full URL:', window.location.href);
+        
+        // Check for URL parameters (multiple possible formats)
+        const qrParam = urlParams.get('qr') || hashParams.get('qr');
+        const tokenParam = urlParams.get('token') || hashParams.get('token');
+        const verificationParam = urlParams.get('verification_id') || hashParams.get('verification_id') || hashParams.get('qr');
+        
+        if (qrParam && tokenParam) {
+            console.log('🎯 Found QR in URL params (qr+token):', qrParam);
+            return { type: 'redirect', id: qrParam };
+        }
+        
+        if (verificationParam) {
+            console.log('🎯 Found verification in URL params:', verificationParam);
+            return { type: 'verification', id: verificationParam };
+        }
+        
+        // Check for /redirect/{qr_id} pattern (NEW QRs)
+        let match = path.match(/\/redirect\/([^\/]+)/);
+        if (match) {
+            console.log('🎯 Found QR in path (redirect):', match[1]);
+            return { type: 'redirect', id: match[1] };
+        }
+        
+        // Check for /v/{verification_id} pattern (OLD QRs)
+        match = path.match(/\/v\/([^\/]+)/);
+        if (match) {
+            console.log('🎯 Found verification in path (v):', match[1]);
+            return { type: 'verification', id: match[1] };
+        }
+        
+        return null;
+    }
+
+    // 🔧 FIXED: Process redirect QRs (CALL API ENDPOINT, DON'T REDIRECT)
+    async function processRedirect(qrId) {
+        console.log('🚀 Processing redirect QR:', qrId);
+        
+        try {
+            // Call the redirect endpoint as an API to get the scanner URL
+            const response = await fetch(`${CONFIG.API_BASE}/redirect/${qrId}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-PWA-Version': '5.0-secure'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Got redirect data:', data);
+                
+                if (data.scanner_url) {
+                    // Extract verification_id from the scanner URL
+                    const url = new URL(data.scanner_url);
+                    const hash = url.hash.substring(1); // Remove #
+                    const hashParams = new URLSearchParams(hash);
+                    const verificationId = hashParams.get('verification_id');
+                    
+                    if (verificationId) {
+                        console.log('🔐 Extracted verification_id:', verificationId);
+                        // Now do silent verification
+                        await silentVerification(verificationId);
+                    } else {
+                        // Fallback: navigate to scanner URL
+                        window.location.href = data.scanner_url;
+                    }
+                } else {
+                    throw new Error('No scanner URL in response');
+                }
+            } else {
+                throw new Error(`API error: ${response.status}`);
+            }
+            
+        } catch (error) {
+            console.error('❌ Redirect processing error:', error);
+            showError('Unable to process QR code');
+        }
+    }
+
+    // 🔧 NEW: Silent background scanning without UI
+    async function startSilentBackgroundScanning() {
+        console.log('🔇 Starting silent background QR scanning...');
+        
+        // Hide reader UI and show status
+        document.getElementById('reader').style.display = 'none';
+        document.getElementById('status').innerHTML = '<p>📱 Initializing scanner...</p>';
+        
+        html5QrCode = new Html5Qrcode("reader");
+        
+        const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+        };
+
+        try {
+            await html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanError
+            );
+            
+            // After camera starts, hide it and show ready status
+            document.getElementById('reader').style.display = 'none';
+            document.getElementById('status').innerHTML = '<p>📷 Ready to scan QR codes</p>';
+            console.log('✅ Silent background scanning active');
+            
+        } catch (err) {
+            console.error("Failed to start silent scanner:", err);
+            document.getElementById('status').innerHTML = 
+                '<div class="alert error">Camera access required to scan QR codes</div>';
+        }
+    }
+
+    async function initializeScanner() {
+        // Legacy function - now redirects to silent scanning
+        await startSilentBackgroundScanning();
+    }
+
+    async function onScanSuccess(decodedText, decodedResult) {
+        if (isProcessing) return;
+        isProcessing = true;
+
+        try {
+            console.log('📸 QR scanned:', decodedText);
+            
+            // Extract data from the scanned URL
+            const extractedData = extractDataFromUrl(decodedText);
+            if (!extractedData) {
+                throw new Error("Invalid QR code format");
+            }
+
+            // Stop scanner
+            await html5QrCode.stop();
+            
+            // Show processing message
+            document.getElementById('reader').style.display = 'none';
+            document.getElementById('processing').classList.remove('hidden');
+            
+            // Process based on type
+            if (extractedData.type === 'redirect') {
+                await processRedirect(extractedData.id);
+            } else if (extractedData.type === 'verification') {
+                await silentVerification(verificationId); // Fixed here
+            }
+            
+        } catch (error) {
+            console.error("Scan error:", error);
+            showError("Unable to process QR code");
+        }
+    }
+
+    function onScanError(errorMessage) {
+        // Ignore - fires continuously when no QR visible
+    }
+
+    // 🔧 KEEP: Extract data from scanned URLs
+    function extractDataFromUrl(url) {
+        console.log('🔍 Extracting data from URL:', url);
+        
+        // Check for /redirect/{qr_id} pattern (NEW QRs)
+        let match = url.match(/\/redirect\/([^\/\?]+)/);
+        if (match) {
+            return { type: 'redirect', id: match[1] };
+        }
+        
+        // Check for /v/{verification_id} pattern (OLD QRs)
+        match = url.match(/\/v\/([^\/\?]+)/);
+        if (match) {
+            return { type: 'verification', id: match[1] };
+        }
+        
+        // Legacy patterns
+        match = url.match(/verification_id=([^&]+)/);
+        if (match) {
+            return { type: 'verification', id: match[1] };
+        }
+        
+        // Direct ID (16 chars)
+        match = url.match(/^([a-zA-Z0-9_-]{16})$/);
+        if (match) {
+            return { type: 'verification', id: match[1] };
+        }
+        
+        return null;
+    }
+
+    // 🔧 KEEP: Full anti-forgery verification with image analysis
+    async function silentVerification(verificationId) {
+        console.log('🔐 Starting COMPREHENSIVE verification with IMAGE ANALYSIS for:', verificationId);
+        
+        try {
+            // STEP 1: CAPTURE QR IMAGE FROM CURRENT PAGE
+            console.log('📸 Capturing QR image for analysis...');
+            let capturedImageBase64 = null;
+            
+            try {
+                // Find the QR image on the page (from camera scan or other source)
+                const qrImageElement = await captureCurrentQRImage();
+                if (qrImageElement) {
+                    capturedImageBase64 = await convertImageToBase64(qrImageElement);
+                    console.log('📸 QR image captured successfully');
+                } else {
+                    console.warn('⚠️ No QR image found for analysis - proceeding without image');
+                }
+            } catch (imageError) {
+                console.warn('⚠️ Image capture failed:', imageError, '- proceeding without image');
+            }
+            
+            // STEP 2: Call comprehensive scan endpoint with FULL DATA
+            console.log('🚀 Running ALL 6 ANTI-FORGERY SECURITY METHODS + IMAGE ANALYSIS...');
+            const scanPayload = {
+                verification_id: null,
+                qr_id: verificationId,
+                device_info: {
+                    user_agent: navigator.userAgent,
+                    screen_resolution: `${screen.width}x${screen.height}`,
+                    color_depth: screen.colorDepth,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    language: navigator.language,
+                    platform: navigator.platform,
+                    timestamp: new Date().toISOString(),
+                    referrer: document.referrer,
+                    touch_support: 'ontouchstart' in window,
+                    cookies_enabled: navigator.cookieEnabled,
+                    online: navigator.onLine
+                }
+            };
+            
+            // Add captured image if available
+            if (capturedImageBase64) {
+                scanPayload.scanned_image = capturedImageBase64;
+                console.log('📸 Including captured image in security analysis');
+            }
+            
+            const scanResponse = await fetch(`${CONFIG.API_BASE}/api/qr/scan`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-PWA-Version': '5.0-secure'
+                },
+                body: JSON.stringify(scanPayload)
+            });
+
+            if (scanResponse.ok) {
+                const scanData = await scanResponse.json();
+                console.log('✅ SECURITY SCAN COMPLETE:', scanData);
+                console.log('🔐 Security Methods Executed:', scanData.security_methods_executed);
+                console.log('🎯 Overall Risk Score:', scanData.overall_risk_score);
+                console.log('📸 Image Analysis:', scanData.image_analysis_result);
+                
+                // Check ALL security results
+                if (scanData.scan_limit_exceeded === true) {
+                    console.error('🚫 SCAN LIMIT EXCEEDED!');
+                    showError('This QR code has reached its maximum scan limit');
+                    return;
+                }
+
+                if (scanData.is_potential_forgery === true || 
+                    scanData.overall_risk_score > 70 ||
+                    scanData.image_analysis_result?.is_photocopy === true ||
+                    scanData.image_analysis_result?.size_mismatch === true) {
+                    
+                    console.error('🚨 SECURITY ALERT: Potential forgery detected!');
+                    console.error('🚨 Forgery:', scanData.is_potential_forgery);
+                    console.error('🚨 Risk Score:', scanData.overall_risk_score);
+                    console.error('🚨 Image Analysis:', scanData.image_analysis_result);
+                    
+                    showError('Security verification failed - Potential forgery detected');
+                    return;
+                }
+
+                // Get destination URL from scan response (ENCRYPTED!)
+                if (scanData.destination_url) {
+                    updateStatus('Verified! Redirecting...', 'success');
+                    console.log('🚀 All security checks passed! Redirecting to:', scanData.destination_url);
+                    
+                    setTimeout(() => {
+                        window.location.href = scanData.destination_url;
+                    }, CONFIG.REDIRECT_DELAY);
+                } else {
+                    throw new Error('No destination URL available');
+                }
+            } else {
+                console.warn('⚠️ Security scan failed, but continuing...');
+                showError('Security verification failed');
+            }
+
+        } catch (error) {
+            console.error('❌ Comprehensive verification error:', error);
+            showError('Unable to access this content');
+        }
+    }
+
+    function updateStatus(message, type = '') {
+        const statusEl = document.getElementById('status');
+        statusEl.innerHTML = `<p class="${type}">${message}</p>`;
+    }
+
+    function showError(message) {
+        const container = document.getElementById('processing').classList.contains('hidden') 
+            ? document.getElementById('status') 
+            : document.getElementById('processing');
+            
+        container.innerHTML = `
+            <div class="alert error">
+                <h3>❌ Error</h3>
+                <p>${message}</p>
+                <button onclick="window.history.back()" class="btn secondary">Go Back</button>
+            </div>
+        `;
+    }
+
+    // 🔧 KEEP: Advanced image capture methods
+    async function captureCurrentQRImage() {
+        console.log('🔍 Looking for QR image on page...');
+        
+        // Try multiple methods to find QR image
+        // Method 1: Look for QR reader element
+        const readerElement = document.getElementById('reader');
+        if (readerElement) {
+            const video = readerElement.querySelector('video');
+            if (video && video.videoWidth > 0) {
+                console.log('📸 Found active video stream');
+                return await captureVideoFrame(video);
+            }
+            
+            const canvas = readerElement.querySelector('canvas');
+            if (canvas) {
+                console.log('📸 Found canvas element');
+                return canvas;
+            }
+        }
+        
+        // Method 2: Look for any QR-related images
+        const images = document.querySelectorAll('img');
+        for (let img of images) {
+            if (img.src && (img.src.includes('qr') || img.src.includes('QR'))) {
+                console.log('📸 Found QR image element');
+                return img;
+            }
+        }
+        
+        // Method 3: If we have an active camera stream, capture from it
+        try {
+            const mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' }
+            });
+            
+            const video = document.createElement('video');
+            video.srcObject = mediaStream;
+            video.autoplay = true;
+            
+            await new Promise((resolve) => {
+                video.onloadedmetadata = resolve;
+            });
+            
+            const canvas = await captureVideoFrame(video);
+            
+            // Stop the stream
+            mediaStream.getTracks().forEach(track => track.stop());
+            
+            return canvas;
+        } catch (streamError) {
+            console.log('📸 No camera stream available');
+            return null;
+        }
+    }
+
+    async function captureVideoFrame(video) {
+        console.log('📸 Capturing frame from video...');
+        
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        console.log(`📸 Captured frame: ${canvas.width}x${canvas.height}`);
+        return canvas;
+    }
+
+    async function convertImageToBase64(imageElement) {
+        console.log('🔄 Converting image to base64...');
+        
+        return new Promise((resolve, reject) => {
+            try {
+                if (imageElement.tagName === 'CANVAS') {
+                    // Already a canvas
+                    const base64 = imageElement.toDataURL('image/png');
+                    console.log('🔄 Canvas converted to base64');
+                    resolve(base64);
+                } else if (imageElement.tagName === 'IMG') {
+                    // Convert img to canvas first
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    canvas.width = imageElement.naturalWidth || imageElement.width;
+                    canvas.height = imageElement.naturalHeight || imageElement.height;
+                    
+                    ctx.drawImage(imageElement, 0, 0);
+                    
+                    const base64 = canvas.toDataURL('image/png');
+                    console.log('🔄 Image converted to base64');
+                    resolve(base64);
+                } else if (imageElement.tagName === 'VIDEO') {
+                    // Capture frame from video
+                    captureVideoFrame(imageElement).then(canvas => {
+                        const base64 = canvas.toDataURL('image/png');
+                        console.log('🔄 Video frame converted to base64');
+                        resolve(base64);
+                    }).catch(reject);
+                } else {
+                    reject(new Error('Unsupported image element type'));
+                }
+            } catch (error) {
+                console.error('🔄 Image conversion error:', error);
+                reject(error);
+            }
+        });
+    }
+    </script>
+</body>
+</html>

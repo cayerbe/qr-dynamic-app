@@ -1,0 +1,81 @@
+# Version Control
+.git/
+.gitignore
+.github/
+
+# Python Development
+__pycache__/
+*.pyc
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments (but keep requirements.txt)
+env/
+venv/
+.venv/
+
+# Frontend and Node.js (not needed for backend)
+node_modules/
+npm-debug.log
+*.web.app
+frontend/
+mobile/
+
+# Environment Files (keep only what's needed)
+.env
+.env.local
+.env.development
+.env.production
+# Allow specific config files for your QR project
+# firestore-credentials.json  # Allow if needed
+# config.json                 # Allow if needed
+
+# Development Tools
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Testing (exclude tests but keep source)
+tests/
+*_test.py
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Documentation (usually not needed in production)
+docs/
+README.md
+# Keep deployment docs
+!deploy*.md
+
+# Backup and Temporary Files
+*.bak
+*.tmp
+*~
+*.log
+
+# Database files (local only)
+*.sqlite
+*.db
+
+# YAML files (be selective)
+# Only exclude specific YAML files, not all
+docker-compose.yml
+k8s*.yaml
+# Keep app.yaml and any other deployment configs

@@ -1,0 +1,38 @@
+/* src/components/ferrari/FerrariTheme.css */
+:root {
+  --ferrari-red: #dc0000;
+  --ferrari-gold: #ffd700;
+  --ferrari-black: #000000;
+}
+
+.ferrari-dashboard {
+  background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
+  min-height: 100vh;
+}
+
+.ferrari-header {
+  background: linear-gradient(90deg, var(--ferrari-red) 0%, #8b0000 100%);
+  box-shadow: 0 4px 20px rgba(220, 0, 0, 0.3);
+}
+
+.text-ferrari-gold {
+  color: var(--ferrari-gold);
+}
+
+.bg-ferrari-gold {
+  background-color: var(--ferrari-gold);
+}
+
+.border-ferrari-gold {
+  border-color: var(--ferrari-gold);
+}
+
+/* Luxury animations */
+.ferrari-dashboard button {
+  transition: all 0.3s ease;
+}
+
+.ferrari-dashboard button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+}

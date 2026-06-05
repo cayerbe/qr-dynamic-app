@@ -1,0 +1,51 @@
+# Node modules
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+.venv/
+backend/venv/
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary folders
+.tmp*/
+.temp/
+tmp/
+/tmp/
+
+# Logs
+logs/
+*.log
+
+# Firebase/Supabase/GCP
+firebase-service-account.json
+firestore-credentials.json
+credentials.json
+serviceAccountKey.json
+*.pem
+
+# Build output
+dist/
+build/
+out/
+.next/
+
+# Coverage
+coverage/
+.nyc_output/
+backend/crack_service_key.json
+backend/app.yaml

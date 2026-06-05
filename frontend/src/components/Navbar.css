@@ -1,0 +1,31 @@
+/* Improved Navbar.css */
+
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background-color: #2563eb; /* Tailwind blue-600, matching your button style */
+  color: white;
+  z-index: 9999;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px; /* horizontal padding clearly added */
+}
+
+nav a {
+  color: white; /* Explicitly ensure white text for clarity */
+  text-decoration: none;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+/* Ensure body has padding for the navbar */
+body {
+  padding-top: 60px !important;
+  margin: 0 !important;
+}

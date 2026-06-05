@@ -1,0 +1,51 @@
+{
+  "hosting": {
+    "public": "build",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "headers": [
+      {
+        "source": "!(pwa-scanner.html)",
+        "headers": [
+          {
+            "key": "Content-Security-Policy",
+            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://apis.google.com https://www.gstatic.com https://www.googleapis.com https://firebase.googleapis.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://identitytoolkit.googleapis.com https://firestore.googleapis.com https://firebase.googleapis.com https://storage.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://crack-celerity-419510.uc.r.appspot.com; media-src 'self' blob:; img-src 'self' data: blob: https://crack-celerity-419510.uc.r.appspot.com https://crack-celerity-419510.appspot.com https://storage.googleapis.com;"
+          }
+        ]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "/pwa-scanner.html",
+        "destination": "/pwa-scanner.html"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint",
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ],
+  "storage": {
+    "rules": "storage.rules"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "module": "CommonJS",  // ✅ FIX: Firebase Functions require CommonJS
+    "esModuleInterop": true,
+    "moduleResolution": "Node",  // ✅ FIX: Use standard Node resolution for Firebase
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "outDir": "lib",  // ✅ This ensures the `lib/` folder is generated
+    "rootDir": "src",  // ✅ This ensures `src/` is compiled correctly
+    "sourceMap": true,
+    "strict": true,
+    "target": "ES6"  // ✅ ES6 is optimal for Firebase Functions
+  },
+  "compileOnSave": true,
+  "include": [
+    "src"
+  ]
+}

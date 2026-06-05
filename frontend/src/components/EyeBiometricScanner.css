@@ -1,0 +1,111 @@
+/* EyeBiometricScanner.css */
+.eye-biometric-scanner {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.status-message {
+  padding: 10px;
+  background-color: #333;
+  color: white;
+  text-align: center;
+  margin-bottom: 10px;
+  border-radius: 5px;
+}
+
+.status-message.error {
+  background-color: #f44336;
+}
+
+.video-container {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.video-feed {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.scanning-overlay,
+.processing-overlay,
+.success-overlay,
+.error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.eye-guide {
+  border: 2px dashed #4caf50;
+  border-radius: 50%;
+  width: 60%;
+  height: 30%;
+  opacity: 0.7;
+}
+
+.scanning-message,
+.processing-message,
+.success-message,
+.error-message {
+  margin-top: 20px;
+  font-size: 16px;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.success-icon,
+.error-icon {
+  background-color: #4caf50;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 40px;
+}
+
+.error-icon {
+  background-color: #f44336;
+}
+
+.retry-button {
+  background-color: #2196f3;
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 20px;
+}

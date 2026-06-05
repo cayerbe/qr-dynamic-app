@@ -1,0 +1,28 @@
+<div class="qr-code-verifier">
+  <h2>QR Code Verifier</h2>
+
+  <div class="scanner-container">
+    <video #video id="video" width="300" height="200"></video>
+    <button (click)="scanQRCode()">Scan QR Code</button>
+  </div>
+
+  <div class="file-upload">
+    <label for="file-input">Select Image:</label>
+    <input
+      type="file"
+      id="file-input"
+      (change)="onFileSelected($event)"
+      accept="image/*"
+    />
+  </div>
+
+  <div class="result-container" *ngIf="scannedResult">
+    <h3>Scanned QR Code:</h3>
+    <p>{{ scannedResult.getText() }}</p>
+    <!-- Add your validation result display here -->
+  </div>
+
+  <div class="error-container" *ngIf="errorMessage">
+    <p class="error-message">{{ errorMessage }}</p>
+  </div>
+</div>

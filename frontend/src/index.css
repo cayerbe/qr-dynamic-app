@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family:
+    source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+/* Add this to the end of your index.css file */
+
+/* Define CSS variables for consistent styling */
+:root {
+  --primary-color: #3f51b5;
+  --secondary-color: #f50057;
+  --light-bg: #f5f5f5;
+  --dark-bg: #212121;
+  --text-color: #333;
+  --light-text: #fff;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+}
+
+/* Force top padding on body for navbar */
+body {
+  padding-top: 60px !important;
+  margin: 0 !important;
+  overflow-x: hidden;
+}
+
+/* Remove navbar from individual components */
+.Dashboard nav:not(.main-navbar),
+.AdminDashboard nav:not(.main-navbar),
+.UserManagement nav:not(.main-navbar),
+.ManufacturerDashboard nav:not(.main-navbar) {
+  display: none !important;
+}
+
+/* Fix for nested content */
+.content-wrapper {
+  min-height: calc(100vh - 60px);
+  width: 100%;
+}
+
+/* Add spin animation keyframes */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

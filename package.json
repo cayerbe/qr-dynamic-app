@@ -1,0 +1,58 @@
+{
+  "name": "dynamic-qr-cdp-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@zxing/library": "^0.21.3",
+    "axios": "^1.8.1",
+    "firebase": "^11.4.0",
+    "moment": "^2.30.1",
+    "typescript": "^4.9.5",
+    "web-vitals": "^2.1.4",
+    "yup": "^1.6.1"
+  },
+  "scripts": {
+    "start": "craco start",
+    "start:backend:flask": "cd ../backend && source venv/bin/activate && FLASK_APP=app.py flask run",
+    "start:backend:node": "cd ../backend && npm run dev",
+    "start:frontend": "npm start",
+    "dev": "concurrently \"npm run start:backend:flask\" \"npm run start:backend:node\" \"npm run start:frontend\"",
+    "build": "env-cmd -f .env.production craco build",
+    "test": "craco test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^8.2.2",
+    "jest": "^29.7.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17"
+  },
+  "description": "dynamic qr code generator with cdp",
+  "main": "postcss.config.js",
+  "keywords": [
+    "qr",
+    "cdp"
+  ],
+  "author": "camiloayerbeposada",
+  "license": "ISC"
+}
