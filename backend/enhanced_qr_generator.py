@@ -87,8 +87,8 @@ except Exception as e:
 # Constants
 TEMP_DIR = '/tmp/qr_codes'
 QR_COLLECTION = 'qr_codes'
-API_BASE_URL = "https://crack-celerity-419510.uc.r.appspot.com/api"
-VERIFICATION_DOMAIN = "https://crack-celerity-419510.uc.r.appspot.com"
+API_BASE_URL = os.environ.get("API_BASE_URL", "https://" + os.environ.get("RAILWAY_PUBLIC_DOMAIN", "") + "/api" if os.environ.get("RAILWAY_PUBLIC_DOMAIN") else "http://localhost:5001/api")
+VERIFICATION_DOMAIN = os.environ.get("VERIFICATION_DOMAIN", "https://" + os.environ.get("RAILWAY_PUBLIC_DOMAIN", "") if os.environ.get("RAILWAY_PUBLIC_DOMAIN") else "http://localhost:5001")
 
 os.makedirs(TEMP_DIR, exist_ok=True)
 

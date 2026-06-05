@@ -114,7 +114,8 @@ def generate_qr_with_cdp(data, intensity=0.2, metadata=None):
         qr_data['id'] = qr_id
         
         # Create redirect URL for tracking
-        redirect_url = f"https://crack-celerity-419510.uc.r.appspot.com/redirect/{qr_id}"
+        domain = os.environ.get("VERIFICATION_DOMAIN", "https://" + os.environ.get("RAILWAY_PUBLIC_DOMAIN", "") if os.environ.get("RAILWAY_PUBLIC_DOMAIN") else "http://localhost:5001")
+        redirect_url = f"{domain}/redirect/{qr_id}"
         
         # Store the original URL but generate QR with redirect URL
         original_url = qr_data['url']

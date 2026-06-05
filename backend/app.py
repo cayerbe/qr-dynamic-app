@@ -153,7 +153,7 @@ def handle_options(path):
     return response, 200
 
 # Base URL for API
-API_BASE_URL = "https://crack-celerity-419510.uc.r.appspot.com/api"
+API_BASE_URL = os.environ.get("API_BASE_URL", "https://" + os.environ.get("RAILWAY_PUBLIC_DOMAIN", "") + "/api" if os.environ.get("RAILWAY_PUBLIC_DOMAIN") else "http://localhost:5001/api")
 
 def log_qr_scan(db, qr_id, user_id, device_info, location_info=None):
     """
