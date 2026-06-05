@@ -17,8 +17,10 @@ const VerifyEmail: React.FC = () => {
 
   useEffect(() => {
     const checkVerification = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
         navigate("/login");
         return;
@@ -43,7 +45,9 @@ const VerifyEmail: React.FC = () => {
   }, [navigate]);
 
   const handleResendVerification = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user || !user.email) {
       setError("You must log in before resending the verification email.");
       return;
@@ -51,7 +55,10 @@ const VerifyEmail: React.FC = () => {
 
     try {
       setStatus("resending");
-      const { error } = await supabase.auth.resend({ type: 'signup', email: user.email });
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: user.email,
+      });
       if (error) throw error;
       setStatus("resent");
     } catch (error) {

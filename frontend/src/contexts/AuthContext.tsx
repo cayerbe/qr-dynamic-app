@@ -32,7 +32,9 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -70,9 +72,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (userData: NewUserData) => {
     setLoading(true);
     const result = await AuthService.register(
-      userData.email, 
-      userData.password, 
-      userData.displayName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim()
+      userData.email,
+      userData.password,
+      userData.displayName ||
+        `${userData.firstName || ""} ${userData.lastName || ""}`.trim(),
     );
     if (!result.success) {
       setLoading(false);
@@ -116,7 +119,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
   };
 
-  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {

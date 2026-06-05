@@ -16,9 +16,13 @@ const ResetPassword: React.FC = () => {
     // Supabase automatically parses the hash fragment and logs the user in
     // when they click the reset password link.
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
-        setError("Invalid or expired reset session. Please request a new link.");
+        setError(
+          "Invalid or expired reset session. Please request a new link.",
+        );
       }
     };
     checkSession();
@@ -39,7 +43,7 @@ const ResetPassword: React.FC = () => {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      
+
       setMessage("✅ Password changed successfully! Redirecting to login...");
       await supabase.auth.signOut(); // Require them to log in with new password
       setTimeout(() => navigate("/login"), 3000);

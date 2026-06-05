@@ -1,4 +1,4 @@
-import { supabase } from './client';
+import { supabase } from "./client";
 
 export interface UserProfile {
   id: string;
@@ -24,25 +24,26 @@ export const AuthService = {
         password,
         options: {
           data: {
-            displayName: displayName || '',
-          }
-        }
+            displayName: displayName || "",
+          },
+        },
       });
 
       if (error) throw error;
-      
+
       // The user is created in auth.users.
       // We will also insert into our public.users table if we need to.
       if (data.user) {
-        const { error: dbError } = await supabase.from('users').insert({
+        const { error: dbError } = await supabase.from("users").insert({
           id: data.user.id,
           email: data.user.email,
           displayName: displayName || null,
           role: "user",
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         });
-        
-        if (dbError && dbError.code !== '23505') { // Ignore unique violation if it already exists
+
+        if (dbError && dbError.code !== "23505") {
+          // Ignore unique violation if it already exists
           console.error("Error creating user profile in DB:", dbError);
         }
       }
@@ -97,31 +98,40 @@ export const AuthService = {
   },
 
   async getCurrentUserProfile(): Promise<UserProfile> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      console.warn("⚠️ No authenticated user found. Returning default profile.");
+      console.warn(
+        "⚠️ No authenticated user found. Returning default profile.",
+      );
       return defaultProfile;
     }
 
     try {
       const { data: userData, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
+        .from("users")
+        .select("*")
+        .eq("id", user.id)
         .single();
 
       if (userData) {
         return {
           id: user.id,
           email: user.email ?? defaultProfile.email,
-          displayName: user.user_metadata?.displayName || userData.displayName || defaultProfile.displayName,
+          displayName:
+            user.user_metadata?.displayName ||
+            userData.displayName ||
+            defaultProfile.displayName,
           photoURL: user.user_metadata?.avatar_url || undefined,
           role: userData.role || defaultProfile.role,
         };
       }
 
-      console.warn(`⚠️ User document for UID ${user.id} not found. Returning default profile.`);
+      console.warn(
+        `⚠️ User document for UID ${user.id} not found. Returning default profile.`,
+      );
       return defaultProfile;
     } catch (error) {
       console.error("🚨 Error fetching user profile:", error);
@@ -130,7 +140,9 @@ export const AuthService = {
   },
 
   onAuthStateChanged(callback: (user: any | null) => void) {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       callback(session?.user || null);
     });
     // Return unsubscribe function
@@ -140,7 +152,7 @@ export const AuthService = {
   async googleSignIn() {
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider: "google",
       });
       if (error) throw error;
       return data;

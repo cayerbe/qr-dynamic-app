@@ -18,7 +18,7 @@ export class Timestamp {
   static fromMillis(milliseconds: number) {
     return new Timestamp(
       Math.floor(milliseconds / 1000),
-      (milliseconds % 1000) * 1000000
+      (milliseconds % 1000) * 1000000,
     );
   }
 
@@ -37,7 +37,9 @@ export function safeConvertToTimestamp(date: any): Timestamp {
   if (date instanceof Date) return Timestamp.fromDate(date);
   if (typeof date === "string") {
     const parsed = new Date(date);
-    return isNaN(parsed.getTime()) ? Timestamp.now() : Timestamp.fromDate(parsed);
+    return isNaN(parsed.getTime())
+      ? Timestamp.now()
+      : Timestamp.fromDate(parsed);
   }
   if (typeof date === "number") {
     return Timestamp.fromMillis(date);
@@ -68,7 +70,9 @@ export function dateToTimestamp(date?: Date | null): Timestamp {
   return date ? Timestamp.fromDate(date) : Timestamp.now();
 }
 
-export function toTimestamp(input?: Date | Timestamp | string | null): Timestamp {
+export function toTimestamp(
+  input?: Date | Timestamp | string | null,
+): Timestamp {
   return safeConvertToTimestamp(input);
 }
 

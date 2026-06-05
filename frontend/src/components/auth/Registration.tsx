@@ -128,7 +128,9 @@ const Register: React.FC = () => {
 
         // Handle specific errors
         if (authError.message?.includes("already in use")) {
-          setError({ email: "This email is already registered. Please log in." });
+          setError({
+            email: "This email is already registered. Please log in.",
+          });
         } else {
           setError({
             general:
