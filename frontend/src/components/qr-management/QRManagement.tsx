@@ -24,6 +24,7 @@ import {
 import * as Styles from "./QRManagementStyles";
 import { toast } from "react-toastify";
 import { safeConvertToDate } from "../../utils/timestampUtils";
+import { QrCode } from "lucide-react";
 
 const QRManagement: React.FC = () => {
   const {
@@ -123,10 +124,23 @@ const QRManagement: React.FC = () => {
         key={qr.id}
         className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
       >
+        <div className="flex justify-center p-4 bg-gray-50 border-b border-gray-100">
+          {qr.imageUrl || qr.image_url ? (
+            <img src={qr.imageUrl || qr.image_url} alt="QR Code" className="w-32 h-32 object-contain" />
+          ) : (
+            <div className="w-32 h-32 bg-gray-200 flex items-center justify-center rounded text-gray-400">
+              <QrCode className="h-10 w-10 opacity-50" />
+            </div>
+          )}
+        </div>
         <div className="p-4 flex justify-between items-start">
-          <div className="flex-1">
+          <div className="flex-1 w-0 pr-2">
             <h3 className="font-medium text-lg truncate">
-              {qr.title || qr.name || qr.data?.original_url || qr.data || qr.id}
+              {(qr.title && qr.title !== "Untitled QR Code") ? qr.title : 
+               (qr.name && qr.name !== "Untitled QR Code") ? qr.name : 
+               (typeof qr.data === 'object' && qr.data?.original_url) ? qr.data.original_url : 
+               (typeof qr.data === 'string' && qr.data) ? qr.data : 
+               qr.id}
             </h3>
             <div className="flex items-center text-sm text-gray-500 mt-1">
               <span
@@ -255,29 +269,33 @@ const QRManagement: React.FC = () => {
         className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
       >
         <div className="p-4 flex justify-between items-center">
-          <div className="flex items-center flex-1">
-            <div className="mr-4">
-              <div
-                className={`flex items-center justify-center h-10 w-10 rounded-lg ${
-                  qr.type === "dynamic" ? "bg-blue-100" : "bg-green-100"
-                }`}
-              >
-                {qr.contentType === "url" ? (
-                  <ExternalLink className="h-5 w-5 text-blue-600" />
-                ) : (
-                  <Eye className="h-5 w-5 text-gray-600" />
-                )}
-              </div>
+          <div className="flex items-center flex-1 w-0">
+            <div className="mr-4 flex-shrink-0">
+              {qr.imageUrl || qr.image_url ? (
+                <img src={qr.imageUrl || qr.image_url} alt="QR Code" className="h-12 w-12 object-contain border rounded bg-white" />
+              ) : (
+                <div
+                  className={`flex items-center justify-center h-12 w-12 rounded-lg ${
+                    qr.type === "dynamic" ? "bg-blue-100" : "bg-green-100"
+                  }`}
+                >
+                  {qr.contentType === "url" ? (
+                    <ExternalLink className="h-5 w-5 text-blue-600" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-600" />
+                  )}
+                </div>
+              )}
             </div>
-            <div className="flex-1">
-              <h3 className="font-medium">
-                {qr.title ||
-                  qr.name ||
-                  qr.data?.original_url ||
-                  qr.data ||
-                  qr.id}
+            <div className="flex-1 w-0 pr-4">
+              <h3 className="font-medium truncate">
+                {(qr.title && qr.title !== "Untitled QR Code") ? qr.title : 
+                 (qr.name && qr.name !== "Untitled QR Code") ? qr.name : 
+                 (typeof qr.data === 'object' && qr.data?.original_url) ? qr.data.original_url : 
+                 (typeof qr.data === 'string' && qr.data) ? qr.data : 
+                 qr.id}
                 {hasCDPConfig && (
-                  <span className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full inline-flex items-center">
+                  <span className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full inline-flex items-center align-middle">
                     <Shield className="h-3 w-3 mr-1" />
                     CDP
                   </span>

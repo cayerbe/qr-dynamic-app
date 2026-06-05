@@ -388,7 +388,7 @@ def get_cdp_info(qr_id):
                 "qr_id": qr_id,
                 "data": qr_data.get('data', {}),
                 "created_at": display_created_at,
-                "qr_image_url": qr_data.get('qr_image_url'),
+                "qr_image_url": qr_data.get('qr_image_url') or qr_data.get('image_url'),
                 "physical_properties": qr_data.get('physical_properties', {}),
                 "security_features": qr_data.get('security_features', {}),
                 "scan_statistics": qr_data.get('scan_statistics', {}),
