@@ -255,9 +255,14 @@ class ShimFirestoreClient:
             from firebase_admin import credentials, firestore as real_firestore
             import os
             
-            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/camiloayerbeposada/qr-dynamic-app/backend/credentials.json"
+            # Check if credentials path is provided via environment, otherwise use relative path
+            cred_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+            if not cred_path:
+                cred_path = os.path.join(os.path.dirname(__file__), "credentials.json")
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
+                
             if not firebase_admin._apps:
-                cred = credentials.Certificate(os.environ["GOOGLE_APPLICATION_CREDENTIALS"])
+                cred = credentials.Certificate(cred_path)
                 firebase_admin.initialize_app(cred, {"projectId": "crack-celerity-419510"})
             
             self.real_db = real_firestore.client()
