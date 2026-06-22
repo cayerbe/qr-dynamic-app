@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+           targetNamespace="urn:epcglobal:epcis:xsd:1" 
+           xmlns:epcis="urn:epcglobal:epcis:xsd:1" 
+           elementFormDefault="unqualified">
+           
+    <!-- A simplified XSD representing the core structure of EPCIS 1.2 for testing purposes. 
+         This validates the structural constraints and types of the generated XML. -->
+
+    <xs:element name="EPCISDocument">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="EPCISBody">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="EventList">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="ObjectEvent" type="epcis:ObjectEventType"/>
+                                        <xs:element name="AggregationEvent" type="epcis:AggregationEventType"/>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="schemaVersion" type="xs:decimal" use="required"/>
+            <xs:attribute name="creationDate" type="xs:dateTime" use="required"/>
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Base Event fields -->
+    <xs:group name="EPCISCoreFields">
+        <xs:sequence>
+            <xs:element name="eventTime" type="xs:dateTime"/>
+            <xs:element name="recordTime" type="xs:dateTime"/>
+            <xs:element name="eventTimeZoneOffset" type="xs:string"/>
+        </xs:sequence>
+    </xs:group>
+
+    <xs:group name="EPCISActionFields">
+        <xs:sequence>
+            <xs:element name="action" type="xs:string"/>
+            <xs:element name="bizStep" type="xs:string" minOccurs="0"/>
+            <xs:element name="disposition" type="xs:string" minOccurs="0"/>
+            <xs:element name="readPoint" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="id" type="xs:anyURI"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="bizLocation" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="id" type="xs:anyURI"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:group>
+
+    <!-- ObjectEvent -->
+    <xs:complexType name="ObjectEventType">
+        <xs:sequence>
+            <xs:group ref="epcis:EPCISCoreFields"/>
+            <xs:element name="epcList">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="epc" type="xs:anyURI" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:group ref="epcis:EPCISActionFields"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- AggregationEvent -->
+    <xs:complexType name="AggregationEventType">
+        <xs:sequence>
+            <xs:group ref="epcis:EPCISCoreFields"/>
+            <xs:element name="parentID" type="xs:anyURI"/>
+            <xs:element name="childEPCs">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="epc" type="xs:anyURI" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:group ref="epcis:EPCISActionFields"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

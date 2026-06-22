@@ -1,5 +1,7 @@
 import unittest
+import os
 import xml.etree.ElementTree as ET
+from lxml import etree
 from epcis_manager import ObjectEvent, CBV, serialize
 
 class TestSerialization(unittest.TestCase):
@@ -46,10 +48,24 @@ class TestSerialization(unittest.TestCase):
         self.assertEqual(obj_evt.find("bizStep").text, CBV.BizStep.COMMISSIONING)
         self.assertEqual(obj_evt.find("disposition").text, CBV.Disposition.ACTIVE)
         
+        
         # Check epcList
         epc_list = obj_evt.find("epcList")
         self.assertIsNotNone(epc_list)
         self.assertEqual(epc_list.find("epc").text, "urn:epc:id:sgtin:12345.12345.1")
+        
+        # Validate against XSD
+        xsd_path = os.path.join(os.path.dirname(__file__), "sandbox", "epcis_1_2_stub.xsd")
+        if os.path.exists(xsd_path):
+            with open(xsd_path, 'r') as f:
+                schema_root = etree.XML(f.read().encode('utf-8'))
+                schema = etree.XMLSchema(schema_root)
+                parser = etree.XMLParser(schema=schema)
+                # If this doesn't raise an exception, the XML is valid
+                try:
+                    etree.fromstring(output.encode('utf-8'), parser)
+                except etree.XMLSyntaxError as e:
+                    self.fail(f"XML failed XSD validation: {e}")
 
 if __name__ == '__main__':
     unittest.main()
