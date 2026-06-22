@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand Guardian AI</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
+        .chat-container { flex: 1; display: flex; flex-direction: column; max-width: 600px; margin: 0 auto; width: 100%; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: #1a73e8; color: white; padding: 15px; text-align: center; }
+        .messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .message { padding: 10px 15px; border-radius: 8px; max-width: 80%; }
+        .user { background: #e3f2fd; align-self: flex-end; }
+        .ai { background: #f1f3f4; align-self: flex-start; }
+        .input-area { display: flex; padding: 15px; border-top: 1px solid #ddd; background: #fff; }
+        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+        button { padding: 10px 20px; background: #1a73e8; color: white; border: none; border-radius: 4px; margin-left: 10px; cursor: pointer; }
+        .role-selector { display: flex; padding: 10px 15px; background: #eef; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="header">
+            <h2 style="margin:0;">Brand Guardian AI</h2>
+        </div>
+        <div class="role-selector">
+            <span>Role:</span>
+            <select id="role-select">
+                <option value="consumer">Consumer</option>
+                <option value="inspector">Inspector</option>
+            </select>
+        </div>
+        <div class="messages" id="chat-box">
+            <div class="message ai">Hi! I am the TESISQUARE Brand Guardian AI. What would you like to know about this product?</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Ask about ingredients, origin, or authenticity...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const gtin = urlParams.get('product') || urlParams.get('gtin');
+        // Get verification_session_id from localStorage if we saved it in the scanner
+        const sessionId = localStorage.getItem('verification_session_id') || 'mock_session_123';
+        
+        let messageHistory = [];
+
+        async function sendMessage() {
+            const inputEl = document.getElementById('user-input');
+            const text = inputEl.value.trim();
+            if (!text) return;
+
+            // Add user message to UI
+            appendMessage(text, 'user');
+            inputEl.value = '';
+            
+            // Add to history
+            messageHistory.push({ role: 'user', content: text });
+
+            // Call API
+            try {
+                const role = document.getElementById('role-select').value;
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        gtin: gtin,
+                        session_id: sessionId,
+                        user_role: role,
+                        messages: messageHistory
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.reply) {
+                        appendMessage(data.reply, 'ai');
+                        messageHistory.push({ role: 'assistant', content: data.reply });
+                    }
+                } else {
+                    appendMessage("Sorry, I encountered an error. Is Anthropic API configured?", 'ai');
+                }
+            } catch (error) {
+                console.error(error);
+                appendMessage("Failed to connect to the server.", 'ai');
+            }
+        }
+
+        function appendMessage(text, sender) {
+            const box = document.getElementById('chat-box');
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+            div.textContent = text;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        // Allow Enter key
+        document.getElementById('user-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>

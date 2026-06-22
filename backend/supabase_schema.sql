@@ -174,3 +174,73 @@ CREATE POLICY "Public can view QR codes." ON public.qr_codes FOR SELECT USING (t
 -- Similar policies for campaigns
 CREATE POLICY "Users can view their own campaigns." ON public.campaigns FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can manage their own campaigns." ON public.campaigns FOR ALL USING (auth.uid() = user_id);
+
+-- -----------------------------------------------------
+-- Traceability & EPCIS 2.0 POC Extensions
+-- -----------------------------------------------------
+
+-- Products (Master Data)
+CREATE TABLE IF NOT EXISTS public.products (
+    gtin TEXT PRIMARY KEY,
+    description TEXT NOT NULL,
+    allergens JSONB DEFAULT '[]'::jsonb,
+    credentials JSONB DEFAULT '[]'::jsonb,
+    origin TEXT,
+    shelf_life_days INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Locations (Master Data)
+CREATE TABLE IF NOT EXISTS public.locations (
+    gln TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    address TEXT,
+    role TEXT,
+    coordinates JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- EPCIS Events
+CREATE TABLE IF NOT EXISTS public.epcis_events (
+    event_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    type TEXT NOT NULL,
+    action TEXT NOT NULL,
+    biz_step TEXT NOT NULL,
+    disposition TEXT NOT NULL,
+    parent_id TEXT,
+    child_epcs JSONB DEFAULT '[]'::jsonb,
+    read_point TEXT,
+    biz_location TEXT,
+    event_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    event_time_zone_offset TEXT NOT NULL,
+    record_time TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    authorizing_uid TEXT
+);
+
+-- QR Genealogy
+CREATE TABLE IF NOT EXISTS public.qr_genealogy (
+    qr_id TEXT PRIMARY KEY REFERENCES public.qr_codes(id) ON DELETE CASCADE,
+    parent_id TEXT,
+    generation INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_by TEXT,
+    model_type TEXT,
+    metadata JSONB DEFAULT '{}'::jsonb
+);
+
+-- RLS policies for new tables
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.locations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.epcis_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.qr_genealogy ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public can view products." ON public.products FOR SELECT USING (true);
+CREATE POLICY "Public can view locations." ON public.locations FOR SELECT USING (true);
+CREATE POLICY "Public can view epcis events." ON public.epcis_events FOR SELECT USING (true);
+CREATE POLICY "Public can view qr genealogy." ON public.qr_genealogy FOR SELECT USING (true);
+
+-- Admins manage all
+CREATE POLICY "Admins manage products" ON public.products FOR ALL USING (auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'recall_officer' = 'true');
+CREATE POLICY "Admins manage locations" ON public.locations FOR ALL USING (auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'recall_officer' = 'true');
+CREATE POLICY "Admins manage epcis events" ON public.epcis_events FOR ALL USING (auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'recall_officer' = 'true');
+CREATE POLICY "Admins manage qr genealogy" ON public.qr_genealogy FOR ALL USING (auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'recall_officer' = 'true');

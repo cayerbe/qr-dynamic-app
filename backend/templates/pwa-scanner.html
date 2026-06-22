@@ -192,6 +192,8 @@
                     await processRedirect(pathData.id);
                 } else if (pathData.type === 'verification') {
                     await silentVerification(pathData.id); 
+                } else if (pathData.type === 'gs1') {
+                    await processGS1Scan(pathData.id);
                 }
             } else {
                 console.log('💻 Manual web access - starting silent background scanning');
@@ -250,6 +252,12 @@
         const qrParam = urlParams.get('qr') || hashParams.get('qr');
         const tokenParam = urlParams.get('token') || hashParams.get('token');
         const verificationParam = urlParams.get('verification_id') || hashParams.get('verification_id') || hashParams.get('qr');
+        const scanParam = urlParams.get('scan') || hashParams.get('scan');
+        
+        if (scanParam) {
+            console.log('🎯 Found GS1 scan in URL params:', scanParam);
+            return { type: 'gs1', id: scanParam };
+        }
         
         if (qrParam && tokenParam) {
             console.log('🎯 Found QR in URL params (qr+token):', qrParam);
@@ -385,11 +393,12 @@
             document.getElementById('reader').style.display = 'none';
             document.getElementById('processing').classList.remove('hidden');
             
-            // Process based on type
             if (extractedData.type === 'redirect') {
                 await processRedirect(extractedData.id);
             } else if (extractedData.type === 'verification') {
-                await silentVerification(verificationId); // Fixed here
+                await silentVerification(extractedData.id); // Fixed here
+            } else if (extractedData.type === 'gs1') {
+                await processGS1Scan(extractedData.id);
             }
             
         } catch (error) {
@@ -428,6 +437,11 @@
         match = url.match(/^([a-zA-Z0-9_-]{16})$/);
         if (match) {
             return { type: 'verification', id: match[1] };
+        }
+        
+        // GS1 Digital Link check
+        if (url.includes('id.gs1.org')) {
+            return { type: 'gs1', id: url };
         }
         
         return null;
@@ -537,6 +551,57 @@
         } catch (error) {
             console.error('❌ Comprehensive verification error:', error);
             showError('Unable to access this content');
+        }
+    }
+    
+    async function processGS1Scan(uri) {
+        console.log('📦 Processing GS1 Digital Link:', uri);
+        try {
+            const response = await fetch(`${CONFIG.API_BASE}/api/epcis/resolve`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ uri: uri })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ GS1 Data:', data);
+                
+                const container = document.getElementById('processing').classList.contains('hidden') 
+                    ? document.getElementById('status') 
+                    : document.getElementById('processing');
+                
+                if (data.recallStatus === 'RECALLED') {
+                    // Show prominent recall warning
+                    container.innerHTML = `
+                        <div class="alert error" style="background:#ffcdd2; color:#b71c1c; border-width:2px; padding:20px;">
+                            <h2 style="font-size:24px; margin-bottom:10px;">⚠️ PRODUCT RECALLED</h2>
+                            <p style="font-weight:bold;">Do not consume or sell this product.</p>
+                            <p style="margin-top:10px;">${data.description}</p>
+                            <button onclick="window.history.back()" class="btn secondary">Go Back</button>
+                        </div>
+                    `;
+                } else {
+                    // Show safe product info
+                    container.innerHTML = `
+                        <div class="alert success">
+                            <h3>✅ Product Verified</h3>
+                            <p style="margin:10px 0; font-weight:bold;">${data.description}</p>
+                            <p>Origin: ${data.origin}</p>
+                            ${data.lotNumber ? `<p>Lot: ${data.lotNumber}</p>` : ''}
+                            <button onclick="window.location.href='/chat?product=' + encodeURIComponent(data.gtin)" class="btn">Ask AI Agent</button>
+                        </div>
+                    `;
+                }
+            } else {
+                throw new Error('Failed to resolve GS1 link');
+            }
+        } catch (error) {
+            console.error('❌ GS1 processing error:', error);
+            showError('Unable to resolve product data');
         }
     }
 

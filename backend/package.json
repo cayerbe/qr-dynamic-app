@@ -21,6 +21,7 @@
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
+    "digital-link.js": "^1.4.3",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",

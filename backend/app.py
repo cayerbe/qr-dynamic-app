@@ -34,6 +34,7 @@ import hmac
 import base64 
 from pwa_scanner_endpoints import register_pwa_scanner_routes
 from enhanced_flask_endpoints import verify_qr_forgery, enhanced_bp, is_ip_blacklisted
+from epcis_endpoints import epcis_bp
 
 # Add these imports:
 from dotenv import load_dotenv
@@ -132,6 +133,7 @@ CORS(app, resources={r"/api/*": {"origins": "*"}},
 
 # Register blueprints AFTER app is created
 app.register_blueprint(enhanced_bp)
+app.register_blueprint(epcis_bp)
 
 # Register other routes/blueprints
 register_self_scanning_routes(app, db)

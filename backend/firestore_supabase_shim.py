@@ -248,7 +248,28 @@ class ShimCollectionReference:
         return ShimQuery(self.table_name).stream()
 
 class ShimFirestoreClient:
+    def __init__(self):
+        self.real_db = None
+        try:
+            import firebase_admin
+            from firebase_admin import credentials, firestore as real_firestore
+            import os
+            
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/camiloayerbeposada/qr-dynamic-app/backend/credentials.json"
+            if not firebase_admin._apps:
+                cred = credentials.Certificate(os.environ["GOOGLE_APPLICATION_CREDENTIALS"])
+                firebase_admin.initialize_app(cred, {"projectId": "crack-celerity-419510"})
+            
+            self.real_db = real_firestore.client()
+        except Exception as e:
+            print(f"Failed to initialize real Firestore for new collections: {e}")
+
     def collection(self, collection_name):
+        if collection_name in ["products", "locations", "epcis_events", "qr_genealogy"]:
+            if self.real_db:
+                return self.real_db.collection(collection_name)
+            else:
+                print(f"Warning: Real Firestore not initialized, returning shim for {collection_name}")
         return ShimCollectionReference(collection_name)
 
 db = ShimFirestoreClient()
