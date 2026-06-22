@@ -18,26 +18,23 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Tuple, Optional
 from cryptography.fernet import Fernet
 
-# Import the anti-photocopy configuration
-from anti_photocopy_cdp import AntiPhotocopyConfig, AntiPhotocopyGenerator
-
-# Import size-adaptive CDP system
+# Import the SOTA CDP configuration
 try:
-    from size_adaptive_cdp import SizeAdaptiveCDPGenerator, SecurityLevel, get_ipzs_recommended_config
+    from cdp_sota_generator import SOTACDPGenerator, SOTACDPConfig
 except ImportError:
-    logging.warning("size_adaptive_cdp module not found. Using fallback implementation.")
-    # Fallback implementation
-    class SecurityLevel:
-        MICRO = "micro"
-        STANDARD = "standard"
-        HIGH = "high"
-        ULTRA = "ultra"
-    
-    class CDPConfig:
+    logging.warning("cdp_sota_generator module not found. Using fallback implementation.")
+    class SOTACDPConfig:
         def __init__(self, size_mm, intensity):
-            self.security_level = SecurityLevel.STANDARD
             self.pixel_size = max(300, int(size_mm * 25))
             self.dpi = 600
+            self.intensity = intensity
+    
+    class SOTACDPGenerator:
+        def generate_config(self, size_mm, intensity):
+            return SOTACDPConfig(size_mm, intensity)
+        
+        def generate_stochastic_pattern(self, config, qr_id):
+            return np.random.rand(config.pixel_size, config.pixel_size).astype(np.float32) * config.intensity, "fallback"
             self.pattern_density = intensity
             self.noise_layers = 3
             self.frequency_bands = 4
@@ -401,12 +398,11 @@ def generate_qr_with_size_adaptive_cdp(
         logger.info(f"   - Short code: {short_code}")
         logger.info(f"   - Model: {model}")
         
-        # Initialize CDP generator
-        cdp_generator = SizeAdaptiveCDPGenerator()
-        cdp_config = cdp_generator.generate_cdp_config(size_mm, intensity)
+        # Initialize SOTA CDP generator
+        cdp_generator = SOTACDPGenerator()
+        cdp_config = cdp_generator.generate_config(size_mm, intensity)
         
-        logger.info(f"CDP Config: {cdp_config.security_level}, "
-                   f"{cdp_config.pixel_size}px, {cdp_config.dpi}DPI")
+        logger.info(f"SOTA CDP Config: {cdp_config.pixel_size}px, {cdp_config.dpi}DPI")
         
         # Calculate appropriate box size
         target_size_px = int(size_mm * resolution_dpi / 25.4)
@@ -454,49 +450,24 @@ def generate_qr_with_size_adaptive_cdp(
         # Ensure binary QR
         qr_array = np.where(qr_array > 127, 255, 0).astype(np.uint8)
         
-        # Generate CDP pattern
-        cdp_pattern, cdp_signature = cdp_generator.generate_multi_frequency_cdp(cdp_config, qr_id)
+        # Generate Information-Theoretic Stochastic CDP pattern
+        cdp_pattern, cdp_metadata = cdp_generator.generate_stochastic_pattern(cdp_config, qr_id)
         
-        # Enhanced CDP generation with anti-photocopy features
-        if anti_photocopy and intensity >= 0.5:
-            logger.info("🔐 Applying anti-photocopy CDP features")
-            
-            ap_generator = AntiPhotocopyGenerator()
-            
-            ap_config = AntiPhotocopyConfig(
-                microprint_enabled=True,
-                halftone_traps=True,
-                frequency_watermark=True,
-                guilloche_patterns=(size_mm >= 20),
-                void_pantograph=(size_mm >= 15),
-                metameric_features=False
-            )
-            
-            ap_pattern = ap_generator.generate_anti_photocopy_pattern(
-                size=cdp_config.pixel_size,
-                qr_id=qr_id,
-                intensity=intensity,
-                config=ap_config
-            )
-            
-            if ap_pattern.max() > 1:
-                ap_pattern = ap_pattern / 255.0
-            
-            # Combine patterns
-            cdp_pattern = cdp_pattern * 0.5 + ap_pattern * 0.5
-            
-            if metadata is None:
-                metadata = {}
-            metadata['anti_photocopy'] = {
-                'enabled': True,
-                'config': {
-                    'microprint': ap_config.microprint_enabled,
-                    'halftone_traps': ap_config.halftone_traps,
-                    'frequency_watermark': ap_config.frequency_watermark,
-                    'guilloche': ap_config.guilloche_patterns,
-                    'void_pantograph': ap_config.void_pantograph
-                }
+        # Legacy anti-photocopy features are fully replaced by the pure SOTA noise matrices.
+        if metadata is None:
+            metadata = {}
+        metadata['anti_photocopy'] = {
+            'enabled': True,
+            'config': {
+                'type': 'SOTA_Information_Theoretic',
+                'signature': cdp_metadata["signature"],
+                'cdp_version': cdp_metadata["cdp_version"],
+                'key_version': cdp_metadata["key_version"]
             }
+        }
+        
+        # We also need to map this signature to the flat properties that might be expected later.
+        cdp_signature = cdp_metadata["signature"]
         
         # Apply CDP to QR code
         qr_with_cdp = apply_cdp_to_qr(qr_array, cdp_pattern, intensity)
