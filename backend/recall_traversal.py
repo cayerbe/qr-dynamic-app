@@ -56,15 +56,25 @@ def check_recall_status(epc_uri):
                 }
                 
         # 2. If not recalled, move to parent
-        parent_record = db.collection("qr_genealogy").document(current_epc).get()
-        if parent_record.exists:
-            parent_data = parent_record.to_dict()
-            parent_epc = parent_data.get("parent_id")
-            if parent_epc:
-                current_epc = parent_epc
-                continue
+        # Find the most recent AggregationEvent where this EPC was in childEPCs
+        child_agg_events = db.collection("epcis_events") \
+            .where("childEPCs", "array_contains", current_epc) \
+            .get()
+            
+        agg_list = [doc.to_dict() for doc in child_agg_events]
+        agg_list.sort(key=lambda x: x.get("eventTime", ""), reverse=True)
+        
+        if agg_list:
+            latest_agg = agg_list[0]
+            # If the latest aggregation action was ADD, the item is currently in that parent
+            if latest_agg.get("action") == "ADD":
+                parent_epc = latest_agg.get("parentID")
+                if parent_epc:
+                    logger.info(f"Traversing up physical hierarchy: {current_epc} -> {parent_epc}")
+                    current_epc = parent_epc
+                    continue
                 
-        # No parent found, traversal ends
+        # No parent found or latest action was DELETE, traversal ends
         break
 
     return {

@@ -32,10 +32,15 @@ class TestRecallTraversal(unittest.TestCase):
         })
         
         # 3. Aggregate child into parent
-        db.collection("qr_genealogy").document(self.child_epc).set({
-            "parent_id": self.parent_epc,
-            "event_id": "agg_event1",
-            "timestamp": "2026-06-22T00:00:02Z"
+        db.collection("epcis_events").document("agg_event1").set({
+            "eventID": "agg_event1",
+            "type": "AggregationEvent",
+            "parentID": self.parent_epc,
+            "childEPCs": [self.child_epc],
+            "action": "ADD",
+            "bizStep": CBV.BizStep.PACKING,
+            "disposition": CBV.Disposition.IN_PROGRESS,
+            "eventTime": "2026-06-22T00:00:02Z"
         })
         
         # 4. Recall parent
