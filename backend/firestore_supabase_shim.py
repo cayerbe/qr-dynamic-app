@@ -254,15 +254,21 @@ class ShimFirestoreClient:
             import firebase_admin
             from firebase_admin import credentials, firestore as real_firestore
             import os
+            import json
             
-            # Check if credentials path is provided via environment, otherwise use relative path
-            cred_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-            if not cred_path:
-                cred_path = os.path.join(os.path.dirname(__file__), "credentials.json")
-                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
-                
             if not firebase_admin._apps:
-                cred = credentials.Certificate(cred_path)
+                # 1. Try to load from a JSON string in environment (Best for Railway)
+                if "FIREBASE_CREDENTIALS_JSON" in os.environ:
+                    cred_dict = json.loads(os.environ["FIREBASE_CREDENTIALS_JSON"])
+                    cred = credentials.Certificate(cred_dict)
+                else:
+                    # 2. Try to load from file path (Local Dev)
+                    cred_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+                    if not cred_path:
+                        cred_path = os.path.join(os.path.dirname(__file__), "credentials.json")
+                        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
+                    cred = credentials.Certificate(cred_path)
+                    
                 firebase_admin.initialize_app(cred, {"projectId": "crack-celerity-419510"})
             
             self.real_db = real_firestore.client()
