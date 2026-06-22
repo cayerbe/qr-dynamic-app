@@ -250,37 +250,9 @@ class ShimCollectionReference:
 class ShimFirestoreClient:
     def __init__(self):
         self.real_db = None
-        try:
-            import firebase_admin
-            from firebase_admin import credentials, firestore as real_firestore
-            import os
-            import json
-            
-            if not firebase_admin._apps:
-                # 1. Try to load from a JSON string in environment (Best for Railway)
-                if "FIREBASE_CREDENTIALS_JSON" in os.environ:
-                    cred_dict = json.loads(os.environ["FIREBASE_CREDENTIALS_JSON"])
-                    cred = credentials.Certificate(cred_dict)
-                else:
-                    # 2. Try to load from file path (Local Dev)
-                    cred_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-                    if not cred_path:
-                        cred_path = os.path.join(os.path.dirname(__file__), "credentials.json")
-                        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
-                    cred = credentials.Certificate(cred_path)
-                    
-                firebase_admin.initialize_app(cred, {"projectId": "crack-celerity-419510"})
-            
-            self.real_db = real_firestore.client()
-        except Exception as e:
-            print(f"Failed to initialize real Firestore for new collections: {e}")
+        # We exclusively use Supabase now. Legacy Firebase initialization removed.
 
     def collection(self, collection_name):
-        if collection_name in ["products", "locations", "epcis_events", "qr_genealogy"]:
-            if self.real_db:
-                return self.real_db.collection(collection_name)
-            else:
-                print(f"Warning: Real Firestore not initialized, returning shim for {collection_name}")
         return ShimCollectionReference(collection_name)
 
 db = ShimFirestoreClient()
