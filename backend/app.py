@@ -8,6 +8,7 @@ from flask import Flask, jsonify, request, send_file, redirect, make_response, B
 from flask_cors import CORS
 # Import Supabase shim
 from firestore_supabase_shim import db, firestore
+from webhook_worker import start_webhook_worker
 from supabase_client import download_from_supabase_storage
 class FieldFilter:
     def __init__(self, field, op, value):
@@ -134,6 +135,9 @@ CORS(app, resources={r"/api/*": {"origins": "*"}},
 # Register blueprints AFTER app is created
 app.register_blueprint(enhanced_bp)
 app.register_blueprint(epcis_bp)
+
+# Start background services
+start_webhook_worker()
 
 # Register other routes/blueprints
 register_self_scanning_routes(app, db)

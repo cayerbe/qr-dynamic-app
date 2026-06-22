@@ -6,7 +6,10 @@ from firestore_supabase_shim import db
 from epcis_manager import validate_event, ObjectEvent, AggregationEvent, CBV
 from recall_traversal import check_recall_status
 from firebase_admin import auth
+from functools import wraps
 from ai_agent import generate_chat_response
+from webhook_worker import enqueue_webhook
+from epcis_manager import serialize
 
 epcis_bp = Blueprint('epcis_bp', __name__)
 
@@ -19,6 +22,128 @@ def parse_gs1_uri(uri):
     except Exception as e:
         print(f"Error parsing GS1 URI: {e}")
         return {"valid": False, "error": str(e)}
+
+def require_partner_auth(scope=None):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            auth_header = request.headers.get("Authorization")
+            api_key = request.headers.get("X-API-Key")
+            token = api_key
+            if auth_header and auth_header.startswith("Bearer "):
+                token = auth_header.split("Bearer ")[1]
+            if not token:
+                return jsonify({"error": "Missing API Key"}), 401
+            
+            # Very simple plaintext key check for POC (in prod this would be hashed)
+            key_doc = db.collection("partner_api_keys").document(token).get()
+            if not key_doc.exists:
+                return jsonify({"error": "Invalid API Key"}), 401
+                
+            key_data = key_doc.to_dict()
+            if scope and scope not in key_data.get("scopes", []):
+                return jsonify({"error": "Insufficient scope"}), 403
+                
+            request.partner = key_data
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+@epcis_bp.route('/api/epcis/capture', methods=['POST'])
+@require_partner_auth(scope="capture")
+def capture_event():
+    """
+    Standard EPCIS 2.0 Capture endpoint.
+    """
+    event_data = request.json
+    if not event_data:
+        return jsonify({"error": "No JSON payload provided"}), 400
+        
+    if "eventList" in event_data:
+        events = event_data["eventList"]
+    else:
+        events = [event_data]
+        
+    for ev in events:
+        try:
+            validate_event(ev)
+        except Exception as e:
+            return jsonify({"error": f"Schema validation failed: {str(e)}"}), 400
+            
+        event_id = ev.get("eventID")
+        db.collection("epcis_events").document(event_id).set(ev)
+        
+        # Enqueue for webhooks
+        enqueue_webhook(ev)
+        
+    return jsonify({"success": True, "message": "Events captured"}), 201
+
+@epcis_bp.route('/api/epcis/events', methods=['GET'])
+@require_partner_auth(scope="query")
+def query_events():
+    """
+    Standard EPCIS Query interface.
+    """
+    query = db.collection("epcis_events")
+    
+    # Simple Filters
+    if request.args.get("MATCH_epc"):
+        # Not perfect (Firestore ORs are hard), but for POC we just filter locally if needed
+        epc = request.args.get("MATCH_epc")
+        # We assume they want exactly this EPC in epcList or childEPCs. We'll do a simple fetch all and filter in python for POC to save complex indexes
+        events = query.get()
+        ev_list = []
+        for e in events:
+            ed = e.to_dict()
+            if epc in ed.get("epcList", []) or epc in ed.get("childEPCs", []) or epc == ed.get("parentID"):
+                ev_list.append(ed)
+    else:
+        # Other filters
+        if request.args.get("EQ_bizStep"):
+            query = query.where("bizStep", "==", request.args.get("EQ_bizStep"))
+        if request.args.get("EQ_disposition"):
+            query = query.where("disposition", "==", request.args.get("EQ_disposition"))
+        if request.args.get("EQ_bizLocation"):
+            query = query.where("bizLocation", "==", request.args.get("EQ_bizLocation"))
+            
+        ev_list = [e.to_dict() for e in query.get()]
+        
+    # Content Negotiation
+    accept = request.headers.get("Accept", "application/ld+json")
+    fmt = "xml-1.2" if "xml" in accept else "jsonld-2.0"
+    
+    serialized = serialize(ev_list, fmt=fmt)
+    
+    if fmt == "xml-1.2":
+        return serialized, 200, {'Content-Type': 'application/xml'}
+    return jsonify(serialized), 200
+
+@epcis_bp.route('/api/epcis/subscriptions', methods=['POST'])
+@require_partner_auth(scope="subscribe")
+def subscribe_webhook():
+    """
+    Registers a Webhook.
+    """
+    data = request.json
+    cb_url = data.get("callback_url")
+    filter_str = data.get("filter", "")
+    secret = data.get("secret", "")
+    fmt = data.get("format", "jsonld-2.0")
+    
+    if not cb_url:
+        return jsonify({"error": "Missing callback_url"}), 400
+        
+    doc_ref = db.collection("epcis_subscriptions").document()
+    doc_ref.set({
+        "callback_url": cb_url,
+        "filter": filter_str,
+        "format": fmt,
+        "secret": secret,
+        "tenant_id": request.partner.get("tenant_id", "default"),
+        "active": True
+    })
+    
+    return jsonify({"success": True, "subscription_id": doc_ref.id}), 201
 
 @epcis_bp.route('/api/epcis/commission', methods=['POST'])
 def commission_event():
@@ -51,6 +176,9 @@ def commission_event():
                     "event_id": event_id,
                     "timestamp": event_data.get("eventTime")
                 })
+
+        # Enqueue for webhooks
+        enqueue_webhook(event_data)
 
         return jsonify({"success": True, "eventId": event_id}), 201
 

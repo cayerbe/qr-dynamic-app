@@ -1,0 +1,34 @@
+products:
+  - gtin: "P1"
+    description: "Premium EVOO 500ml, Tuscany DOP"
+    origin: "Tuscany"
+    allergens: ["None"]
+    credentials: ["DOP", "Organic"]
+  - gtin: "P2"
+    description: "Truffle & Walnut Infused EVOO 250ml"
+    origin: "Tuscany"
+    allergens: ["Walnut (Tree Nuts)"]
+  - gtin: "P3"
+    description: "Standard EVOO 1L"
+    origin: "Italy"
+
+locations:
+  - gln: "LOC-BOTTLE-TUSC"
+    description: "Tuscany Bottling Facility"
+    type: "bottling"
+  - gln: "LOC-DC-AUTH"
+    description: "Authorized Regional DC"
+    type: "distribution"
+  - gln: "LOC-RETAIL-AUTH"
+    description: "Authorized Retail Store"
+    type: "retail"
+  - gln: "LOC-UNAUTH-COUNTRY"
+    description: "Unauthorized Gray Market Region"
+    type: "retail"
+
+timeline:
+  commission_lot: "LOT-OO-001"
+  product: "P1"
+  num_items: 50
+  num_cases: 5
+  num_pallets: 1
