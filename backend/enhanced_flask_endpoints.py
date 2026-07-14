@@ -672,7 +672,7 @@ def pwa_verify_scan():
                 }
 
             # Log scan event
-            log_pwa_scan_event_secure(db, verification_id, verification_result, request)
+            log_pwa_scan_event_secure(db, verification_id, qr_id, verification_result, request)
 
             # Clean up temp files
             for path in [scanned_path, original_path if 'original_path' in locals() else None]:
@@ -754,11 +754,12 @@ def image_to_base64(file_path):
     with open(file_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
 
-def log_pwa_scan_event_secure(db, verification_id, verification_result, request):
+def log_pwa_scan_event_secure(db, verification_id, qr_id, verification_result, request):
     """Log PWA scan event for secure verification"""
     try:
         scan_log = {
             'scan_id': str(uuid.uuid4()),
+            'qr_id': qr_id,
             'verification_id': verification_id,
             'timestamp': firestore.SERVER_TIMESTAMP,
             'scan_type': 'pwa_secure_scanner',
@@ -772,7 +773,7 @@ def log_pwa_scan_event_secure(db, verification_id, verification_result, request)
             }
         }
         
-        db.collection('pwa_secure_scan_logs').add(scan_log)
+        db.collection('qr_scan_logs').add(scan_log)
         
     except Exception as e:
         logger.error(f"Failed to log secure PWA scan: {str(e)}")

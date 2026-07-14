@@ -131,19 +131,75 @@ class CDPCalibrator:
         logger.info("3. Scan the GENUINE prints using the PWA and save them to a 'genuine_scans' folder.")
         logger.info("4. Scan the PHOTOCOPIES using the PWA and save them to a 'photocopy_scans' folder.")
         logger.info("5. Run: python calibrate_cdp.py physical <genuine_dir> <photocopy_dir>")
+    def run_physical_calibration(self, digital_dir: str, genuine_dir: str, photocopy_dir: str):
+        """Analyzes real physical prints and photocopies against their digital originals."""
+        logger.info(f"--- RUNNING PHYSICAL CALIBRATION ---")
+        
+        def process_directory(scan_dir: str, target_list: list):
+            valid_extensions = ('.png', '.jpg', '.jpeg')
+            files = [f for f in os.listdir(scan_dir) if f.lower().endswith(valid_extensions)]
+            logger.info(f"Processing {len(files)} images in {scan_dir}...")
+            
+            for file in files:
+                scan_path = os.path.join(scan_dir, file)
+                # We assume the user named the scan similar to the original, or we just pair them by index.
+                # To be safe and simple, let's just use the very first digital template for all comparisons
+                # if we can't find an exact name match, since the mathematical structure is statistically similar
+                # but for exact alignment, we need the exact digital original.
+                
+                # Let's try to extract the index from the filename (e.g. calibration_qr_5.jpg -> 5)
+                import re
+                match = re.search(r'\d+', file)
+                if match:
+                    idx = match.group()
+                    digital_file = f"calibration_qr_{idx}.png"
+                else:
+                    # Fallback to the first one
+                    digital_file = "calibration_qr_0.png"
+                    
+                digital_path = os.path.join(digital_dir, digital_file)
+                
+                if not os.path.exists(digital_path):
+                    logger.warning(f"Could not find digital original {digital_path} for {file}. Skipping.")
+                    continue
+                    
+                logger.info(f"Analyzing {file} against {digital_file}...")
+                try:
+                    res = size_agnostic_pattern_analysis(digital_path, scan_path, f"PHYSICAL_CALIB_{idx if match else '0'}")
+                    if 'pattern_analysis' in res:
+                        target_list.append(res['pattern_analysis'])
+                except Exception as e:
+                    logger.error(f"Error analyzing {file}: {e}")
+
+        process_directory(genuine_dir, self.genuine_scores)
+        process_directory(photocopy_dir, self.photocopy_scores)
+        
+        if not self.genuine_scores or not self.photocopy_scores:
+            logger.error("Failed to extract scores. Ensure directories contain valid images.")
+            return
+            
+        self._report_distributions()
 
 if __name__ == "__main__":
     import sys
     # For local dev testing, force secret
     os.environ['CDP_SECRET_KEY'] = 'calibration_dev_secret'
-    
+    # Force the local script to generate QRs that point to the production Railway backend!
+    if 'VERIFICATION_DOMAIN' not in os.environ:
+        os.environ['VERIFICATION_DOMAIN'] = 'https://qr-dynamic-app-production.up.railway.app'
+        
     calibrator = CDPCalibrator()
     mode = sys.argv[1] if len(sys.argv) > 1 else 'mock'
     
     if mode == 'mock':
         calibrator.run_mock_calibration(num_samples=10)
-    elif mode == 'generate':
+    elif mode in ['generate', 'generate-sheets']:
+        out_dir = sys.argv[2] if len(sys.argv) > 2 else os.path.join(calibrator.temp_dir, "physical_prints")
         calibrator.generate_physical_sheets(num_samples=20)
+    elif mode == 'physical':
+        if len(sys.argv) < 5:
+            logger.error("Usage for physical: python calibrate_cdp.py physical <digital_dir> <genuine_dir> <photocopy_dir>")
+            sys.exit(1)
+        calibrator.run_physical_calibration(sys.argv[2], sys.argv[3], sys.argv[4])
     else:
-        logger.info("Usage: python calibrate_cdp.py [mock|generate]")
-        logger.info("Physical ingestion mode requires passing directories, which is implemented next.")
+        logger.info("Usage: python calibrate_cdp.py [mock | generate-sheets | physical]")
