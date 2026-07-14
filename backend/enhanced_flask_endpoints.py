@@ -757,19 +757,33 @@ def image_to_base64(file_path):
 def log_pwa_scan_event_secure(db, verification_id, qr_id, verification_result, request):
     """Log PWA scan event for secure verification"""
     try:
+        sec_analysis = verification_result.get('security_analysis', {})
+        is_verified = verification_result.get('is_verified', False)
+        
+        # Map to the format the dashboard expects!
+        anti_forgery_analysis = {
+            "overall_authenticity": "AUTHENTIC" if is_verified else "FORGERY",
+            "total_risk_score": 100.0 - verification_result.get('verification_score', 0),
+            "cdp_verification": {
+                "cdp_score": verification_result.get('verification_score', 0) / 100.0,
+                "cdp_verified": is_verified,
+                "is_photocopy": sec_analysis.get('photocopy_detected', False)
+            },
+            "network_info": {
+                "ip_address": request.headers.get('Origin', 'unknown')
+            }
+        }
+        
         scan_log = {
             'scan_id': str(uuid.uuid4()),
             'qr_id': qr_id,
             'verification_id': verification_id,
             'timestamp': firestore.SERVER_TIMESTAMP,
             'scan_type': 'pwa_secure_scanner',
-            'verification_result': verification_result,
+            'anti_forgery_analysis': anti_forgery_analysis,
             'device_info': {
                 'user_agent': request.headers.get('User-Agent'),
                 'pwa_version': request.headers.get('X-PWA-Version')
-            },
-            'network_info': {
-                'origin': request.headers.get('Origin')
             }
         }
         
